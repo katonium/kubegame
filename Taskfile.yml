@@ -1,0 +1,19 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  GREETING: Hello
+
+dotenv: ['.env']
+
+includes:
+  api:
+    taskfile: ./backend/api/
+    dir: ./backend/api/
+
+tasks:
+  default:
+    cmds:
+      - echo "{{.GREETING}}, ${WORLD}!"
+    silent: true

@@ -1,0 +1,109 @@
+version: '3'
+
+vars:
+  PORT: 9999
+  CONTAINER_NAME: misc-api
+  REPOSITORY_NAME: "misc-api"
+
+env:
+  # use latest as default but it can be overwritten by environment variables
+  TAG_VERSION: latest
+
+tasks:
+  setup:
+    desc: Setup workspace
+    cmds:
+      - cmd: go install github.com/UnnoTed/fileb0x@v1.1.4
+      - cmd: go install go.uber.org/mock/mockgen@v0.4.0
+
+  clean:
+    desc: Clean workspace
+    cmds:
+      - cmd: rm -r ./build/
+
+  cleanMock:
+    cmds:
+      - cmd: rm -r ./mock/
+        ignore_error: true
+
+  generate:
+    desc: Generate code
+    cmds:
+      - go generate
+
+  generateMock:
+    desc: Generate mock
+    deps:
+      - task: cleanMock
+    cmds:
+      - cmd: bash ./sh/generate_mock.sh
+
+  build:
+    desc: Build application
+    deps:
+      - task: generate
+    cmds:
+      - task: buildApp
+
+  run:
+    desc: Run application
+    deps:
+      - task: build
+    cmds:
+      - task: runApp
+
+  test:
+    desc: Test application
+    cmds:
+      - cmd: mkdir -p ./build/test/
+      - cmd: go test -short -cover ./... -coverprofile=./build/test/cover.out.tmp
+      - cmd: cat ./build/test/cover.out.tmp | grep -v "**_mock.go" > ./build/test/cover.out
+      - cmd: rm ./build/test/cover.out.tmp
+      - cmd: go tool cover -html=./build/test/cover.out -o ./build/test/cover.html
+
+  coverage:
+    cmds:
+      - cmd: mkdir -p ./build/test/
+      - cmd: go test -short -covermode=count ./... -coverprofile=./build/test/coverage.out  | tee ./build/test/test_output.txt
+      - cmd: go tool cover -func=./build/test/coverage.out | awk '/total/ {print "| **" $$1 "** | **" $$3 "** |"}' | tee ./build/test/coverage.txt
+      - cmd: cat ./build/test/test_output.txt | grep 'ok.*coverage' | awk '{print "| " $$2 " | " $$5 " |"}' | tee -a ./build/test/coverage.txt
+      - cmd: echo "## Test Coverage Report" > ./build/test/coverage_with_header.txt
+      - cmd: echo "| Package           | Coverage |" >> ./build/test/coverage_with_header.txt
+      - cmd: echo "|-------------------|----------|" >> ./build/test/coverage_with_header.txt
+      - cmd: cat ./build/test/coverage.txt >> ./build/test/coverage_with_header.txt
+      - cmd: mv ./build/test/coverage_with_header.txt ./build/test/coverage.txt
+      - cmd: rm ./build/test/test_output.txt
+
+  buildApp:
+    cmds:
+      - cmd: CGO_ENABLED=0 go build -o app
+
+  runApp:
+    cmds:
+      - cmd: ./app
+
+  dockerBuild:
+    desc: Build Docker image
+    cmds:
+      - task: buildImage
+
+  buildImage:
+    desc: Build Docker image
+    deps:
+      - task: build
+    cmds:
+      - cmd: docker build -f docker/Dockerfile -t asia-northeast1-docker.pkg.dev/${GOOGLECLOUD_PROJECT_ID}/andsunny-misc/{{.REPOSITORY_NAME}}:${TAG_VERSION} .
+
+  dockerRun:
+    desc: Run Docker image
+    deps:
+      - task: dockerBuild
+    cmds:
+      - cmd: docker run --name {{.CONTAINER_NAME}} --env APP_ENV="prod" --env PORT={{.PORT}} -p {{.PORT}}:{{.PORT}} asia-northeast1-docker.pkg.dev/${GOOGLECLOUD_PROJECT_ID}/andsunny-misc/{{.REPOSITORY_NAME}}:${TAG_VERSION}
+
+  push:
+    desc: Push Docker image to Google Cloud Artifact Registry
+    deps:
+      - task: buildImage
+    cmds:
+      - docker push asia-northeast1-docker.pkg.dev/${GOOGLECLOUD_PROJECT_ID}/andsunny-misc/{{.REPOSITORY_NAME}}:${TAG_VERSION}
