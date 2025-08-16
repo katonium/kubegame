@@ -55,12 +55,12 @@ export const INITIAL_PLAYER_NODES: Node[] = [
 export const INITIAL_CPU_NODES: Node[] = [
   {
     id: 'cpu-node-1',
-    name: 'kube-ai-node-x',
+    name: 'k8s-node-x',
     capacity: { cpu: 4, memory: 8 },
   },
   {
     id: 'cpu-node-2',
-    name: 'kube-ai-node-y',
+    name: 'k8s-node-y',
     capacity: { cpu: 8, memory: 16 },
   },
 ];

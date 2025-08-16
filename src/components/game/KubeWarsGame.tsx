@@ -177,7 +177,7 @@ export function KubeWarsGame() {
 
         if (pending.length > 0 && availableNodes.length > 0) {
             const podToSchedule = pending[0];
-            const bestNode = availableNodes.find(n => n.availableCpu >= podToSchedule.requirements.cpu && n.availableMemory >= podToschedule.requirements.memory);
+            const bestNode = availableNodes.find(n => n.availableCpu >= podToSchedule.requirements.cpu && n.availableMemory >= podToSchedule.requirements.memory);
             
             if (bestNode) {
                 schedulePod(podToSchedule.id, bestNode.id, false);
@@ -236,7 +236,7 @@ export function KubeWarsGame() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0 pt-4">
         <PlayerPanel title="Your Nodes" nodes={playerNodes} pods={pods} onDrop={handleDrop} onNodeClick={handleNodeClick} selectedPodId={selectedPodId} />
-        <PlayerPanel title="Kubernetes AI Nodes" nodes={cpuNodes} pods={pods} />
+        <PlayerPanel title="Kubernetes Scheduler Nodes" nodes={cpuNodes} pods={pods} />
       </div>
     </div>
   );

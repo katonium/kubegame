@@ -11,7 +11,7 @@ type GameOverPanelProps = {
 };
 
 export function GameOverPanel({ playerScore, cpuScore, onRestart }: GameOverPanelProps) {
-  const winner = playerScore > cpuScore ? 'Player' : playerScore < cpuScore ? 'Kubernetes AI' : 'Draw';
+  const winner = playerScore > cpuScore ? 'Player' : playerScore < cpuScore ? 'Kubernetes Scheduler' : 'Draw';
   
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
@@ -30,7 +30,7 @@ export function GameOverPanel({ playerScore, cpuScore, onRestart }: GameOverPane
                 <div className="text-4xl font-bold text-muted-foreground">VS</div>
                  <div className="flex flex-col items-center gap-2">
                     <Bot className="w-10 h-10 text-red-500"/>
-                    <span>AI</span>
+                    <span>K8s</span>
                     <span className="font-mono text-4xl">{cpuScore}</span>
                 </div>
             </div>
