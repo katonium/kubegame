@@ -7,7 +7,8 @@
         "github.copilot",
         "github.copilot-workspace",
         "github.vscode-github-actions",
-        "Anthropic.claude-code"
+        "Anthropic.claude-code",
+        "bierner.markdown-mermaid"
       ]
     }
   },

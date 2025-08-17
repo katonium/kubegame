@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 	"github.com/katonium/kubegame/backend/domain/entity"
 )
 
@@ -29,4 +30,14 @@ type NodeRepository interface {
 	GetNodesByType(ctx context.Context, nodeType string) ([]*entity.Node, error)
 	UpdateNode(ctx context.Context, node *entity.Node) error
 	DeleteNode(ctx context.Context, nodeID string) error
+}
+
+type GameSessionRepository interface {
+	CreateSession(ctx context.Context, session *entity.GameSession) error
+	GetSession(ctx context.Context, connectionID string) (*entity.GameSession, error)
+	GetSessionByID(ctx context.Context, sessionID string) (*entity.GameSession, error)
+	GetAllSessions(ctx context.Context) ([]*entity.GameSession, error)
+	UpdateSession(ctx context.Context, session *entity.GameSession) error
+	DeleteSession(ctx context.Context, connectionID string) error
+	CleanupInactiveSessions(ctx context.Context, timeout time.Duration) error
 }

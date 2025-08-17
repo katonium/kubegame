@@ -57,6 +57,11 @@ func (w *wsConnection) Close() error {
 
 // WriteJSON writes a JSON-encoded object to the connection.
 func (w *wsConnection) WriteJSON(v interface{}) error {
+	// Log outgoing message for debugging
+	if jsonBytes, err := json.Marshal(v); err == nil {
+		logger.Debug(context.Background(), "WebSocket SEND: %s", string(jsonBytes))
+	}
+	
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return w.conn.WriteJSON(v)
@@ -64,7 +69,16 @@ func (w *wsConnection) WriteJSON(v interface{}) error {
 
 // ReadJSON reads a JSON-encoded object from the connection.
 func (w *wsConnection) ReadJSON(v interface{}) error {
-	return w.conn.ReadJSON(v)
+	err := w.conn.ReadJSON(v)
+	
+	// Log incoming message for debugging
+	if err == nil {
+		if jsonBytes, jsonErr := json.Marshal(v); jsonErr == nil {
+			logger.Debug(context.Background(), "WebSocket RECV: %s", string(jsonBytes))
+		}
+	}
+	
+	return err
 }
 
 // Client represents an abstract WebSocket client.
@@ -155,17 +169,32 @@ func (c *client) writePump() {
 
 // webSocketService implements the WebSocket service for game communication.
 type webSocketService struct {
-	clients    map[string]Client  // Connected clients indexed by ID
-	broadcast  chan []byte        // Broadcast channel for messages to all clients
-	register   chan Client        // Register channel for new clients
-	unregister chan Client        // Unregister channel for disconnecting clients
-	upgrader   websocket.Upgrader // WebSocket upgrader configuration
-	mu         sync.RWMutex       // Mutex for thread-safe access to clients map
+	clients           map[string]Client  // Connected clients indexed by ID
+	broadcast         chan []byte        // Broadcast channel for messages to all clients
+	register          chan Client        // Register channel for new clients
+	unregister        chan Client        // Unregister channel for disconnecting clients
+	upgrader          websocket.Upgrader // WebSocket upgrader configuration
+	mu                sync.RWMutex       // Mutex for thread-safe access to clients map
+	gameSessionService service.GameSessionService // Session management
+	gameEngine        GameEngine         // Game engine interface
+	gameUseCase       GameUseCase       // Game use case interface
+}
+
+// Interfaces to avoid circular dependencies
+type GameEngine interface {
+	StartGame(ctx context.Context, gameID string) error
+	StopGame(ctx context.Context, gameID string) error
+}
+
+type GameUseCase interface {
+	StartGame(ctx context.Context, gameID string) error
+	StopGame(ctx context.Context, gameID string) error
+	SchedulePodToNode(ctx context.Context, podID, nodeID, connectionID string) error
 }
 
 // NewWebSocketService creates a new WebSocket service instance.
 // It initializes the service and starts the background hub goroutine.
-func NewWebSocketService() service.WebSocketService {
+func NewWebSocketService(gameSessionService service.GameSessionService, gameEngine GameEngine, gameUseCase GameUseCase) service.WebSocketService {
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -175,15 +204,21 @@ func NewWebSocketService() service.WebSocketService {
 	}
 
 	svc := &webSocketService{
-		clients:    make(map[string]Client),
-		broadcast:  make(chan []byte),
-		register:   make(chan Client),
-		unregister: make(chan Client),
-		upgrader:   upgrader,
+		clients:            make(map[string]Client),
+		broadcast:          make(chan []byte),
+		register:           make(chan Client),
+		unregister:         make(chan Client),
+		upgrader:           upgrader,
+		gameSessionService: gameSessionService,
+		gameEngine:         gameEngine,
+		gameUseCase:        gameUseCase,
 	}
 
 	// Start the hub goroutine
 	go svc.run()
+	
+	// Start the timer update goroutine
+	go svc.runTimerUpdates()
 
 	return svc
 }
@@ -248,7 +283,7 @@ func (ws *webSocketService) BroadcastEvent(ctx context.Context, event *entity.Ga
 		return fmt.Errorf("failed to marshal event: %w", err)
 	}
 
-	logger.Debug(ctx, "Broadcasting event: %s", event.Type)
+	logger.Debug(ctx, "Broadcasting event: %s - content: %s", event.Type, string(data))
 
 	select {
 	case ws.broadcast <- data:
@@ -268,7 +303,12 @@ func (ws *webSocketService) SendEventToClient(ctx context.Context, clientID stri
 		return fmt.Errorf("client %s not found", clientID)
 	}
 
-	logger.Debug(ctx, "Sending event %s to client %s", event.Type, clientID)
+	// Log the complete outgoing event for debugging
+	if eventBytes, err := json.Marshal(event); err == nil {
+		logger.Debug(ctx, "Sending event to client %s: %s", clientID, string(eventBytes))
+	} else {
+		logger.Debug(ctx, "Sending event %s to client %s (marshal error: %v)", event.Type, clientID, err)
+	}
 
 	return client.SendJSON(event)
 }
@@ -315,11 +355,43 @@ func (ws *webSocketService) run() {
 			ws.clients[client.ID()] = client
 			ws.mu.Unlock()
 
+			// Create session and cluster for new client
+			ctx := context.Background()
+			_, err := ws.gameSessionService.CreateSession(ctx, client.ID())
+			if err != nil {
+				logger.Error(ctx, "Failed to create session for client %s: %v", client.ID(), err)
+			} else {
+				// Create cluster for the session
+				if err := ws.gameSessionService.CreateCluster(ctx, client.ID()); err != nil {
+					logger.Error(ctx, "Failed to create cluster for client %s: %v", client.ID(), err)
+				} else {
+					logger.Info(ctx, "Created session and cluster for client %s", client.ID())
+					// Note: Game will be started when frontend sends "start_game" message
+					
+					// Send welcome message with session info
+					session, _ := ws.gameSessionService.GetSession(ctx, client.ID())
+					welcomeEvent := &entity.GameEvent{
+						Type:      "session_created",
+						Data:      session,
+						Timestamp: time.Now(),
+					}
+					client.SendJSON(welcomeEvent)
+				}
+			}
+
 		case client := <-ws.unregister:
 			ws.mu.Lock()
 			if _, ok := ws.clients[client.ID()]; ok {
 				delete(ws.clients, client.ID())
 				client.Close()
+				
+				// Close session and cleanup cluster
+				ctx := context.Background()
+				if err := ws.gameSessionService.CloseSession(ctx, client.ID()); err != nil {
+					logger.Error(ctx, "Failed to close session for client %s: %v", client.ID(), err)
+				} else {
+					logger.Info(ctx, "Closed session and cleaned up cluster for client %s", client.ID())
+				}
 			}
 			ws.mu.Unlock()
 
@@ -370,7 +442,17 @@ func (ws *webSocketService) handleClientMessage(ctx context.Context, client Clie
 	Type string      `json:"type"`
 	Data interface{} `json:"data"`
 }) {
-	logger.Debug(ctx, "Received message from client %s: %s", client.ID(), message.Type)
+	// Log the complete incoming message for debugging
+	if msgBytes, err := json.Marshal(message); err == nil {
+		logger.Debug(ctx, "Processing message from client %s: %s", client.ID(), string(msgBytes))
+	} else {
+		logger.Debug(ctx, "Received message from client %s: type=%s (marshal error: %v)", client.ID(), message.Type, err)
+	}
+
+	// Update session activity
+	if err := ws.gameSessionService.UpdateSessionActivity(ctx, client.ID()); err != nil {
+		logger.Error(ctx, "Failed to update session activity for client %s: %v", client.ID(), err)
+	}
 
 	// Handle different message types
 	switch message.Type {
@@ -385,11 +467,187 @@ func (ws *webSocketService) handleClientMessage(ctx context.Context, client Clie
 
 	case "join_game":
 		logger.Info(ctx, "Client %s joined the game", client.ID())
-		// TODO: Handle game join logic
+		// Send session info and initial game state
+		if session, err := ws.gameSessionService.GetSession(ctx, client.ID()); err != nil {
+			logger.Error(ctx, "Failed to get session for client %s: %v", client.ID(), err)
+			errorEvent := &entity.GameEvent{
+				Type:      "error",
+				Data:      map[string]string{"message": "Failed to get session"},
+				Timestamp: time.Now(),
+			}
+			client.SendJSON(errorEvent)
+		} else {
+			// Send session ready event
+			sessionReadyEvent := &entity.GameEvent{
+				Type:      "session_ready",
+				Data:      session,
+				Timestamp: time.Now(),
+			}
+			client.SendJSON(sessionReadyEvent)
+		}
+
+	case "start_game":
+		logger.Info(ctx, "Client %s requested to start game", client.ID())
+		if err := ws.gameSessionService.StartGame(ctx, client.ID()); err != nil {
+			logger.Error(ctx, "Failed to start game for client %s: %v", client.ID(), err)
+			errorEvent := &entity.GameEvent{
+				Type:      "error",
+				Data:      map[string]string{"message": "Failed to start game"},
+				Timestamp: time.Now(),
+			}
+			client.SendJSON(errorEvent)
+		} else {
+			// Start the game engine
+			session, _ := ws.gameSessionService.GetSession(ctx, client.ID())
+			if session != nil && session.GameID != nil {
+				if err := ws.gameEngine.StartGame(ctx, *session.GameID); err != nil {
+					logger.Error(ctx, "Failed to start game engine for client %s: %v", client.ID(), err)
+				} else {
+					logger.Info(ctx, "Started game engine for client %s", client.ID())
+				}
+			}
+			
+			// Get the updated session state with all details
+			session, _ = ws.gameSessionService.GetSession(ctx, client.ID())
+			
+			// Send game started confirmation with full game state
+			gameStartedEvent := &entity.GameEvent{
+				Type:      "game_started",
+				Data:      session,
+				Timestamp: time.Now(),
+			}
+			client.SendJSON(gameStartedEvent)
+			
+			// Also send the current pods and nodes state
+			if session != nil {
+				ws.sendCompleteGameState(ctx, client.ID(), session.ClusterID)
+			}
+		}
+
+	case "stop_game":
+		logger.Info(ctx, "Client %s requested to stop game", client.ID())
+		if err := ws.gameSessionService.StopGame(ctx, client.ID()); err != nil {
+			logger.Error(ctx, "Failed to stop game for client %s: %v", client.ID(), err)
+		} else {
+			// Send game stopped confirmation
+			session, _ := ws.gameSessionService.GetSession(ctx, client.ID())
+			gameStoppedEvent := &entity.GameEvent{
+				Type:      "game_stopped",
+				Data:      session,
+				Timestamp: time.Now(),
+			}
+			client.SendJSON(gameStoppedEvent)
+		}
+
+	case "restart_game":
+		logger.Info(ctx, "Client %s requested to restart game", client.ID())
+		if err := ws.gameSessionService.RestartGame(ctx, client.ID()); err != nil {
+			logger.Error(ctx, "Failed to restart game for client %s: %v", client.ID(), err)
+			errorEvent := &entity.GameEvent{
+				Type:      "error",
+				Data:      map[string]string{"message": "Failed to restart game"},
+				Timestamp: time.Now(),
+			}
+			client.SendJSON(errorEvent)
+		} else {
+			// Send game restarted confirmation
+			session, _ := ws.gameSessionService.GetSession(ctx, client.ID())
+			gameRestartedEvent := &entity.GameEvent{
+				Type:      "game_restarted",
+				Data:      session,
+				Timestamp: time.Now(),
+			}
+			client.SendJSON(gameRestartedEvent)
+		}
+
+	case "get_session_state":
+		logger.Info(ctx, "Client %s requested session state", client.ID())
+		session, err := ws.gameSessionService.GetSessionState(ctx, client.ID())
+		if err != nil {
+			logger.Error(ctx, "Failed to get session state for client %s: %v", client.ID(), err)
+			errorEvent := &entity.GameEvent{
+				Type:      "error",
+				Data:      map[string]string{"message": "Failed to get session state"},
+				Timestamp: time.Now(),
+			}
+			client.SendJSON(errorEvent)
+		} else {
+			sessionStateEvent := &entity.GameEvent{
+				Type:      "session_state",
+				Data:      session,
+				Timestamp: time.Now(),
+			}
+			client.SendJSON(sessionStateEvent)
+		}
 
 	case "schedule_pod":
 		logger.Info(ctx, "Client %s requested pod scheduling", client.ID())
-		// TODO: Handle pod scheduling request
+		
+		// Parse scheduling request
+		data, ok := message.Data.(map[string]interface{})
+		if !ok {
+			logger.Error(ctx, "Invalid schedule_pod data format from client %s", client.ID())
+			errorEvent := &entity.GameEvent{
+				Type:      "error",
+				Data:      map[string]string{"message": "Invalid schedule_pod data format"},
+				Timestamp: time.Now(),
+			}
+			client.SendJSON(errorEvent)
+			return
+		}
+
+		podID, ok := data["pod_id"].(string)
+		if !ok {
+			logger.Error(ctx, "Missing pod_id in schedule_pod request from client %s", client.ID())
+			errorEvent := &entity.GameEvent{
+				Type:      "error",
+				Data:      map[string]string{"message": "Missing pod_id"},
+				Timestamp: time.Now(),
+			}
+			client.SendJSON(errorEvent)
+			return
+		}
+
+		nodeID, ok := data["node_id"].(string)
+		if !ok {
+			logger.Error(ctx, "Missing node_id in schedule_pod request from client %s", client.ID())
+			errorEvent := &entity.GameEvent{
+				Type:      "error",
+				Data:      map[string]string{"message": "Missing node_id"},
+				Timestamp: time.Now(),
+			}
+			client.SendJSON(errorEvent)
+			return
+		}
+
+		// Call game use case to schedule pod
+		if ws.gameUseCase != nil {
+			if err := ws.gameUseCase.SchedulePodToNode(ctx, podID, nodeID, client.ID()); err != nil {
+				logger.Error(ctx, "Failed to schedule pod %s to node %s for client %s: %v", podID, nodeID, client.ID(), err)
+				errorEvent := &entity.GameEvent{
+					Type:      "error",
+					Data:      map[string]string{"message": fmt.Sprintf("Failed to schedule pod: %v", err)},
+					Timestamp: time.Now(),
+				}
+				client.SendJSON(errorEvent)
+			} else {
+				logger.Info(ctx, "Successfully scheduled pod %s to node %s for client %s", podID, nodeID, client.ID())
+				successEvent := &entity.GameEvent{
+					Type:      "pod_scheduled",
+					Data:      map[string]string{"pod_id": podID, "node_id": nodeID},
+					Timestamp: time.Now(),
+				}
+				client.SendJSON(successEvent)
+			}
+		} else {
+			logger.Error(ctx, "Game use case not available for client %s", client.ID())
+			errorEvent := &entity.GameEvent{
+				Type:      "error",
+				Data:      map[string]string{"message": "Game use case not available"},
+				Timestamp: time.Now(),
+			}
+			client.SendJSON(errorEvent)
+		}
 
 	default:
 		logger.Warn(ctx, "Unknown message type %s from client %s", message.Type, client.ID())
@@ -410,4 +668,58 @@ func (ws *webSocketService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	ws.RegisterClient(ctx, clientID, conn)
+}
+
+// sendCompleteGameState sends the complete game state (pods, nodes, game info) to a specific client
+func (ws *webSocketService) sendCompleteGameState(ctx context.Context, clientID, clusterID string) {
+	// Send initial game state notification
+	stateEvent := &entity.GameEvent{
+		Type:      "game_state_init",
+		Data:      map[string]string{
+			"cluster_id": clusterID,
+			"message": "Game initialized - pods and nodes created",
+		},
+		Timestamp: time.Now(),
+	}
+	ws.SendEventToClient(ctx, clientID, stateEvent)
+}
+
+// runTimerUpdates runs a background goroutine that sends timer updates to active game clients
+func (ws *webSocketService) runTimerUpdates() {
+	ticker := time.NewTicker(1 * time.Second) // Update every second
+	defer ticker.Stop()
+	
+	ctx := context.Background()
+	
+	for range ticker.C {
+		ws.mu.RLock()
+		clients := make(map[string]Client)
+		for k, v := range ws.clients {
+			clients[k] = v
+		}
+		ws.mu.RUnlock()
+		
+		// For each connected client, check if they have an active game
+		for clientID := range clients {
+			session, err := ws.gameSessionService.GetSession(ctx, clientID)
+			if err != nil || session == nil || session.GameID == nil {
+				continue
+			}
+			
+			// Get the current game state and send timer update
+			// Note: We can't access game repository directly from here
+			// For now, send a simple timer tick event
+			timerEvent := &entity.GameEvent{
+				Type: "timer_tick",
+				Data: map[string]interface{}{
+					"session_id": session.SessionID,
+					"game_id": *session.GameID,
+					"timestamp": time.Now().Unix(),
+				},
+				Timestamp: time.Now(),
+			}
+			
+			ws.SendEventToClient(ctx, clientID, timerEvent)
+		}
+	}
 }

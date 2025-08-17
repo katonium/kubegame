@@ -44,6 +44,7 @@ type Pod struct {
 	Status       PodStatus            `json:"status"`
 	NodeID       *string              `json:"nodeId"`
 	Owner        PodOwner             `json:"owner"`
+	Namespace    string               `json:"namespace"` // Namespace where the pod is created
 	CreatedAt    time.Time            `json:"createdAt"`
 }
 
@@ -81,4 +82,27 @@ type GameEvent struct {
 	Type      string      `json:"type"`
 	Data      interface{} `json:"data"`
 	Timestamp time.Time   `json:"timestamp"`
+}
+
+type SessionState string
+
+const (
+	SessionStateConnected    SessionState = "connected"
+	SessionStateClusterReady SessionState = "cluster-ready"
+	SessionStatePlaying      SessionState = "playing"
+	SessionStateDisconnected SessionState = "disconnected"
+)
+
+// GameSession represents a user's game session tied to their WebSocket connection
+type GameSession struct {
+	ConnectionID      string       `json:"connectionId"`
+	SessionID         string       `json:"sessionId"`
+	State             SessionState `json:"state"`
+	ClusterID         string       `json:"clusterId"`         // Unique cluster identifier for this session
+	PlayerNamespace   string       `json:"playerNamespace"`   // Namespace for player pods
+	SchedulerNamespace string      `json:"schedulerNamespace"` // Namespace for k8s scheduler pods
+	GameID            *string      `json:"gameId"`            // Current game ID if playing
+	CreatedAt         time.Time    `json:"createdAt"`
+	UpdatedAt         time.Time    `json:"updatedAt"`
+	LastActivity      time.Time    `json:"lastActivity"`
 }

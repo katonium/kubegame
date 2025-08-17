@@ -3,11 +3,14 @@ package main
 import (
 	"context"
 	"net/http"
+	"fmt"
+	"os"
 
 	"github.com/katonium/kubegame/backend/domain/repository"
 	"github.com/katonium/kubegame/backend/domain/service"
 	"github.com/katonium/kubegame/backend/infrastructure/kubernetes"
 	infraRepo "github.com/katonium/kubegame/backend/infrastructure/repository"
+	infraService "github.com/katonium/kubegame/backend/infrastructure/service"
 	"github.com/katonium/kubegame/backend/infrastructure/websocket"
 	"github.com/katonium/kubegame/backend/usecase"
 	"github.com/katonium/kubegame/backend/util/logger"
@@ -15,7 +18,14 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
+var defaultPort = "8080"
+
 func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = defaultPort
+	}
+
 	app := fx.New(
 		// Provide repositories
 		fx.Provide(
@@ -30,6 +40,10 @@ func main() {
 			fx.Annotate(
 				infraRepo.NewMemoryNodeRepository,
 				fx.As(new(repository.NodeRepository)),
+			),
+			fx.Annotate(
+				infraRepo.NewMemorySessionRepository,
+				fx.As(new(repository.GameSessionRepository)),
 			),
 		),
 
@@ -47,22 +61,49 @@ func main() {
 				fx.As(new(service.SchedulerService)),
 			),
 			fx.Annotate(
-				websocket.NewWebSocketService,
+				func(sessionRepo repository.GameSessionRepository,
+					gameRepo repository.GameRepository,
+					podRepo repository.PodRepository,
+					nodeRepo repository.NodeRepository,
+					kubernetesService service.KubernetesService) service.GameSessionService {
+					return infraService.NewGameSessionService(sessionRepo, gameRepo, podRepo, nodeRepo, kubernetesService)
+				},
+				fx.As(new(service.GameSessionService)),
+			),
+			fx.Annotate(
+				func(gameSessionService service.GameSessionService,
+					gameEngine *usecase.GameEngineUseCase,
+					gameUseCase *usecase.GameUseCase) service.WebSocketService {
+					return websocket.NewWebSocketService(gameSessionService, gameEngine, gameUseCase)
+				},
 				fx.As(new(service.WebSocketService)),
 			),
 		),
 
 		// Provide use cases
 		fx.Provide(
-			usecase.NewGameEngineUseCase,
-			usecase.NewGameUseCase,
+			func(gameRepo repository.GameRepository,
+				podRepo repository.PodRepository,
+				nodeRepo repository.NodeRepository,
+				sessionRepo repository.GameSessionRepository,
+				k8sService service.KubernetesService) *usecase.GameEngineUseCase {
+				return usecase.NewGameEngineUseCase(gameRepo, podRepo, nodeRepo, sessionRepo, nil, k8sService)
+			},
+			func(gameRepo repository.GameRepository,
+				podRepo repository.PodRepository,
+				nodeRepo repository.NodeRepository,
+				sessionRepo repository.GameSessionRepository,
+				k8sService service.KubernetesService,
+				schedulerSvc service.SchedulerService,
+				gameEngine *usecase.GameEngineUseCase) *usecase.GameUseCase {
+				return usecase.NewGameUseCase(gameRepo, podRepo, nodeRepo, sessionRepo, k8sService, schedulerSvc, nil, gameEngine)
+			},
 		),
 
 		// Lifecycle hooks
 		fx.Invoke(func(
 			lc fx.Lifecycle,
 			schedulerSvc service.SchedulerService,
-			gameUseCase *usecase.GameUseCase,
 			wsService service.WebSocketService,
 		) {
 			lc.Append(fx.Hook{
@@ -74,19 +115,13 @@ func main() {
 						return err
 					}
 
-					// Start a sample game for testing
-					gameID := "test-game"
-					if err := gameUseCase.StartGame(ctx, gameID); err != nil {
-						return err
-					}
-
-					logger.Info(ctx, "Game %s started successfully", gameID)
+					logger.Info(ctx, "KubeGame backend ready for connections")
 
 					// Start HTTP server for WebSocket connections
 					go func() {
 						http.Handle("/ws", wsService)
-						logger.Info(ctx, "WebSocket server starting on :8080/ws")
-						if err := http.ListenAndServe(":8080", nil); err != nil {
+						logger.Info(ctx, "WebSocket server starting on :%s/ws", port)
+						if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
 							logger.Error(ctx, "HTTP server failed: %v", err)
 						}
 					}()
@@ -100,18 +135,7 @@ func main() {
 			})
 		}),
 	)
-	ctx := context.Background()
-	if err := app.Start(ctx); err != nil {
-		logger.Error(ctx, "Failed to start KubeGame backend: %v", err)
-	}
-
-	// Wait for the application to finish
-	sig := app.Wait()
-	logger.Info(ctx, "KubeGame backend stopped with signal: %v", sig)
-
-	// Stop the application gracefully
-	if err := app.Stop(ctx); err != nil {
-		logger.Error(ctx, "Failed to stop KubeGame backend: %v", err)
-	}
-	logger.Info(ctx, "KubeGame backend stopped successfully")
+	
+	// Run the application and block until shutdown
+	app.Run()
 }
