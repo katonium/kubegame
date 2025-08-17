@@ -76,11 +76,11 @@ tasks:
 
   buildApp:
     cmds:
-      - cmd: CGO_ENABLED=0 go build -o app
+      - cmd: CGO_ENABLED=0 go build -o build/app
 
   runApp:
     cmds:
-      - cmd: ./app
+      - cmd: ./build/app
 
   dockerBuild:
     desc: Build Docker image
