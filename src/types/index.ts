@@ -4,14 +4,14 @@ export type PodOwner = 'player' | 'cpu' | null;
 export type Pod = {
   id: string;
   name: string;
-  label: 'Banana' | 'Chocolate' | 'Strawberry' | 'Vanilla';
+  label: 'banana' | 'chocolate' | 'strawberry' | 'vanilla'; // lowercase to match backend
   requirements: {
     cpu: number; // in cores
     memory: number; // in GB
   };
   status: PodStatus;
   nodeId: string | null;
-  owner: PodOwner;
+  scheduledBy: 'player' | 'cpu' | null; // renamed from owner to match backend
 };
 
 export type Node = {
@@ -21,4 +21,5 @@ export type Node = {
     cpu: number;
     memory: number;
   };
+  nodeType: 'player' | 'cpu'; // player nodes vs cpu/scheduler nodes
 };

@@ -11,9 +11,10 @@ type PreGamePanelProps = {
   onStart: () => void;
   onShowHelp: () => void;
   onBack: () => void;
+  canStart?: boolean; // Add option to disable start button
 };
 
-export function PreGamePanel({ gameState, onStart, onShowHelp, onBack }: PreGamePanelProps) {
+export function PreGamePanel({ gameState, onStart, onShowHelp, onBack, canStart = true }: PreGamePanelProps) {
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
       <Card className="w-full max-w-md shadow-2xl">
@@ -24,8 +25,8 @@ export function PreGamePanel({ gameState, onStart, onShowHelp, onBack }: PreGame
               <p className="text-muted-foreground">The Kubernetes Scheduling Game</p>
             </CardHeader>
             <CardContent className="flex flex-col gap-4 p-8">
-              <Button onClick={onStart} size="lg">
-                Start Game
+              <Button onClick={onStart} size="lg" disabled={!canStart}>
+                {canStart ? 'Start Game' : 'Preparing...'}
               </Button>
               <Button onClick={onShowHelp} variant="outline" size="lg">
                 <HelpCircle className="mr-2 h-4 w-4"/>

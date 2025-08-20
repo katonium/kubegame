@@ -20,10 +20,10 @@ type PodCardProps = {
 };
 
 const labelIcons: Record<Pod['label'], React.ReactNode> = {
-  Banana: <BananaIcon className="w-5 h-5" />,
-  Chocolate: <ChocolateIcon className="w-5 h-5" />,
-  Strawberry: <StrawberryIcon className="w-5 h-5" />,
-  Vanilla: <VanillaIcon className="w-5 h-5" />,
+  banana: <BananaIcon className="w-5 h-5" />,
+  chocolate: <ChocolateIcon className="w-5 h-5" />,
+  strawberry: <StrawberryIcon className="w-5 h-5" />,
+  vanilla: <VanillaIcon className="w-5 h-5" />,
 };
 
 const statusColors: Record<Pod['status'], string> = {

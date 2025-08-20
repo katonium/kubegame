@@ -8,184 +8,134 @@ import { PreGamePanel } from './PreGamePanel';
 import { GameOverPanel } from './GameOverPanel';
 import { PendingPodsPanel } from './PendingPodsPanel';
 import { useToast } from '@/hooks/use-toast';
+import { useWebSocket } from '@/hooks/use-websocket';
 import {
-  INITIAL_PODS,
-  INITIAL_PLAYER_NODES,
-  INITIAL_CPU_NODES,
-  POINTS_PER_POD_PER_SECOND,
-  GAME_TICK_MS,
-  EVENT_TICK_MS,
   GAME_DURATION_SECONDS,
-  AI_SCHEDULE_INTERVAL_MS,
 } from '@/lib/constants';
 
 type GameState = 'pre-game' | 'playing' | 'help' | 'game-over';
 
 export function KubeWarsGame() {
-  const [gameState, setGameState] = useState<GameState>('pre-game');
-  const [pods, setPods] = useState<Pod[]>([]);
-  const [playerNodes, setPlayerNodes] = useState<Node[]>([]);
-  const [cpuNodes, setCpuNodes] = useState<Node[]>([]);
-  const [playerScore, setPlayerScore] = useState(0);
-  const [cpuScore, setCpuScore] = useState(0);
-  const [time, setTime] = useState(GAME_DURATION_SECONDS);
+  const [uiState, setUiState] = useState<GameState>('pre-game');
   const [draggedPod, setDraggedPod] = useState<Pod | null>(null);
   const [selectedPodId, setSelectedPodId] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  // Use WebSocket hook for real-time game data
+  const { 
+    isConnected,
+    session,
+    gameStatus,
+    gameState: backendGameState, 
+    pods, 
+    nodes, 
+    startGame,
+    schedulePod,
+    connect,
+    disconnect
+  } = useWebSocket();
 
-  const resetGame = useCallback(() => {
-    setPods(JSON.parse(JSON.stringify(INITIAL_PODS)));
-    setPlayerNodes(JSON.parse(JSON.stringify(INITIAL_PLAYER_NODES)));
-    setCpuNodes(JSON.parse(JSON.stringify(INITIAL_CPU_NODES)));
-    setPlayerScore(0);
-    setCpuScore(0);
-    setTime(GAME_DURATION_SECONDS);
-    setSelectedPodId(null);
-    setDraggedPod(null);
-  }, []);
-
-  useEffect(() => {
-    resetGame();
-  }, [resetGame]);
-
-  const handleStartGame = () => {
-    resetGame();
-    setGameState('playing');
-  };
-
-  const handleShowHelp = () => setGameState('help');
-  const handleBackToMenu = () => setGameState('pre-game');
-
-  const schedulePod = useCallback((podId: string, nodeId: string, isPlayer: boolean) => {
-      const allNodes = isPlayer ? playerNodes : cpuNodes;
-      const node = allNodes.find(n => n.id === nodeId);
-      const podToSchedule = pods.find(p => p.id === podId);
-      if (!node || !podToSchedule) return;
-
-      setPods(prevPods => prevPods.map(p =>
-          p.id === podId ? { ...p, status: 'Scheduling', nodeId, owner: isPlayer ? 'player' : 'cpu' } : p
-      ));
-      
-      setTimeout(() => {
-        setPods(currentPods => {
-            const currentPodToSchedule = currentPods.find(p => p.id === podId);
-            if (!currentPodToSchedule) return currentPods;
-            
-            const podsOnNode = currentPods.filter(
-                p => p.nodeId === nodeId && p.status !== 'Failed'
-            );
-            
-            const usedCpu = podsOnNode.reduce((acc, p) => acc + p.requirements.cpu, 0);
-            const usedMemory = podsOnNode.reduce((acc, p) => acc + p.requirements.memory, 0);
-
-            const canSchedule =
-                node.capacity.cpu >= usedCpu + currentPodToSchedule.requirements.cpu &&
-                node.capacity.memory >= usedMemory + currentPodToSchedule.requirements.memory;
-
-            if (canSchedule) {
-                if(isPlayer) toast({ title: "Pod Scheduled!", description: `${currentPodToSchedule.name} is now running.` });
-                return currentPods.map(p => p.id === podId ? { ...p, status: 'Running' } : p);
-            } else {
-                if(isPlayer) toast({ title: "Scheduling Failed!", description: `${node.name} has insufficient resources.`, variant: 'destructive' });
-                return currentPods.map(p => p.id === podId ? { ...p, status: 'Failed' } : p);
-            }
-        });
-      }, 1000);
-    }, [playerNodes, cpuNodes, pods, toast]
+  // Separate player and CPU nodes
+  const playerNodes = useMemo(() => 
+    nodes.filter(node => node.nodeType === 'player'), 
+    [nodes]
   );
   
+  const cpuNodes = useMemo(() => 
+    nodes.filter(node => node.nodeType === 'cpu'), 
+    [nodes]
+  );
+
+  // Extract scores and time from backend game state
+  const playerScore = backendGameState?.playerScore || 0;
+  const cpuScore = backendGameState?.cpuScore || 0;
+  const time = backendGameState?.timeLeft || GAME_DURATION_SECONDS;
+
+  // Reset UI state when game resets
+  const resetGame = useCallback(() => {
+    setSelectedPodId(null);
+    setDraggedPod(null);
+    setUiState('pre-game');
+  }, []);
+
+  // Sync UI state with backend game state
   useEffect(() => {
-    const failedPods = pods.filter(p => p.status === 'Failed');
-    if (failedPods.length > 0) {
-      const timer = setTimeout(() => {
-        setPods(prevPods =>
-          prevPods.map(p => (p.status === 'Failed' ? { ...p, status: 'Pending', nodeId: null, owner: null } : p))
-        );
-      }, 2000);
-      return () => clearTimeout(timer);
+    if (gameStatus === 'game_over') {
+      setUiState('game-over');
+    } else if (gameStatus === 'playing') {
+      setUiState('playing');
+    } else if (gameStatus === 'ready') {
+      // Stay in pre-game until user clicks start
     }
-  }, [pods]);
+  }, [gameStatus]);
 
-  // Game tick for score and time
-  useEffect(() => {
-    if (gameState !== 'playing') return;
-    const timer = setInterval(() => {
-      setTime(t => {
-        if (t <= 1) {
-            setGameState('game-over');
-            return 0;
-        }
-        return t - 1;
+  const handleStartGame = () => {
+    if (gameStatus === 'ready') {
+      startGame();
+      setUiState('playing');
+    } else {
+      console.warn('Cannot start game: session not ready');
+    }
+  };
+
+  const handleShowHelp = () => setUiState('help');
+  const handleBackToMenu = () => setUiState('pre-game');
+
+  const handleSchedulePod = useCallback((podId: string, nodeId: string, isPlayer: boolean) => {
+    if (!isPlayer) {
+      // Only allow player scheduling through UI
+      return;
+    }
+
+    const node = playerNodes.find(n => n.id === nodeId);
+    const podToSchedule = pods.find(p => p.id === podId);
+    
+    if (!node || !podToSchedule) {
+      console.warn('Invalid pod or node for scheduling');
+      return;
+    }
+
+    if (!isConnected) {
+      toast({ 
+        title: "Connection Error", 
+        description: "Not connected to game server", 
+        variant: 'destructive' 
       });
+      return;
+    }
 
-      const runningPlayerPods = pods.filter(p => p.status === 'Running' && p.owner === 'player');
-      if (runningPlayerPods.length > 0) {
-        setPlayerScore(s => s + runningPlayerPods.length * POINTS_PER_POD_PER_SECOND);
-      }
-      
-      const runningCpuPods = pods.filter(p => p.status === 'Running' && p.owner === 'cpu');
-      if (runningCpuPods.length > 0) {
-        setCpuScore(s => s + runningCpuPods.length * POINTS_PER_POD_PER_SECOND);
-      }
+    // Send scheduling request to backend
+    schedulePod(podId, nodeId);
+    
+    // Show immediate feedback
+    toast({ 
+      title: "Scheduling Pod...", 
+      description: `Requesting to schedule ${podToSchedule.name} to ${node.name}` 
+    });
+  }, [playerNodes, pods, isConnected, schedulePod, toast]);
 
-    }, GAME_TICK_MS);
-    return () => clearInterval(timer);
-  }, [gameState, pods]);
-
-  // Game engine for random events
+  // Show success/failure notifications for pod scheduling
   useEffect(() => {
-    if (gameState !== 'playing') return;
-    const eventTimer = setInterval(() => {
-      const eventType = Math.random();
-      if (eventType < 0.5) { // Terminate a pod
-        const runningPods = pods.filter(p => p.status === 'Running');
-        if (runningPods.length > 0) {
-            const podToTerminate = runningPods[Math.floor(Math.random() * runningPods.length)];
-            setPods(currentPods => currentPods.map(p => p.id === podToTerminate.id ? { ...p, status: 'Pending', nodeId: null, owner: null } : p));
+    pods.forEach(pod => {
+      if (pod.scheduledBy === 'player') {
+        if (pod.status === 'Running' && pod.nodeId) {
+          const node = playerNodes.find(n => n.id === pod.nodeId);
+          if (node) {
+            toast({ 
+              title: "Pod Scheduled!", 
+              description: `${pod.name} is now running on ${node.name}` 
+            });
+          }
+        } else if (pod.status === 'Failed') {
+          toast({ 
+            title: "Scheduling Failed!", 
+            description: `${pod.name} failed to schedule - insufficient resources`, 
+            variant: 'destructive' 
+          });
         }
-      } else { // Add a new pod
-        const newPod: Pod = {
-          id: `pod-${Date.now()}`,
-          name: `pod-gen-${Math.random().toString(36).substring(7)}`,
-          label: ['Banana', 'Chocolate', 'Strawberry', 'Vanilla'][Math.floor(Math.random() * 4)] as Pod['label'],
-          requirements: { cpu: Math.ceil(Math.random() * 2), memory: Math.ceil(Math.random() * 4) },
-          status: 'Pending',
-          nodeId: null,
-          owner: null
-        };
-        setPods(currentPods => [...currentPods, newPod]);
       }
-    }, EVENT_TICK_MS);
-    return () => clearInterval(eventTimer);
-  }, [gameState, pods]);
-
-  // AI Scheduler
-   useEffect(() => {
-    if (gameState !== 'playing') return;
-    const aiScheduler = setInterval(() => {
-        const pending = pods.filter(p => p.status === 'Pending');
-        const availableNodes = cpuNodes.map(node => {
-            const podsOnNode = pods.filter(p => p.nodeId === node.id && p.status !== 'Failed');
-            const usedCpu = podsOnNode.reduce((acc, p) => acc + p.requirements.cpu, 0);
-            const usedMemory = podsOnNode.reduce((acc, p) => acc + p.requirements.memory, 0);
-            return {
-                ...node,
-                availableCpu: node.capacity.cpu - usedCpu,
-                availableMemory: node.capacity.memory - usedMemory
-            };
-        }).sort((a, b) => b.availableCpu - a.availableCpu); // Prioritize nodes with more CPU
-
-        if (pending.length > 0 && availableNodes.length > 0) {
-            const podToSchedule = pending[0];
-            const bestNode = availableNodes.find(n => n.availableCpu >= podToSchedule.requirements.cpu && n.availableMemory >= podToSchedule.requirements.memory);
-            
-            if (bestNode) {
-                schedulePod(podToSchedule.id, bestNode.id, false);
-            }
-        }
-    }, AI_SCHEDULE_INTERVAL_MS);
-    return () => clearInterval(aiScheduler);
-  }, [gameState, pods, cpuNodes, schedulePod]);
+    });
+  }, [pods, playerNodes, toast]);
 
 
   const handleDragStart = (e: DragEvent<HTMLDivElement>, pod: Pod) => {
@@ -196,7 +146,7 @@ export function KubeWarsGame() {
   const handleDrop = (e: DragEvent<HTMLDivElement>, nodeId: string) => {
     e.preventDefault();
     if (draggedPod) {
-      schedulePod(draggedPod.id, nodeId, true);
+      handleSchedulePod(draggedPod.id, nodeId, true);
     }
     setDraggedPod(null);
   };
@@ -209,18 +159,44 @@ export function KubeWarsGame() {
 
   const handleNodeClick = (nodeId: string) => {
     if (selectedPodId) {
-      schedulePod(selectedPodId, nodeId, true);
+      handleSchedulePod(selectedPodId, nodeId, true);
       setSelectedPodId(null);
     }
   };
 
   const pendingPods = useMemo(() => pods.filter(p => p.status === 'Pending'), [pods]);
 
-  if (gameState === 'pre-game' || gameState === 'help') {
-    return <PreGamePanel gameState={gameState} onStart={handleStartGame} onShowHelp={handleShowHelp} onBack={handleBackToMenu} />;
+  if (uiState === 'pre-game' || uiState === 'help') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <PreGamePanel 
+          gameState={uiState} 
+          onStart={handleStartGame} 
+          onShowHelp={handleShowHelp} 
+          onBack={handleBackToMenu}
+          canStart={gameStatus === 'ready'}
+        />
+        {!isConnected && (
+          <div className="mt-4 p-4 bg-yellow-100 border border-yellow-400 rounded-lg">
+            <p className="text-yellow-800">Connecting to game server...</p>
+          </div>
+        )}
+        {isConnected && gameStatus === 'waiting' && (
+          <div className="mt-4 p-4 bg-blue-100 border border-blue-400 rounded-lg">
+            <p className="text-blue-800">Setting up game session...</p>
+          </div>
+        )}
+        {isConnected && gameStatus === 'ready' && session && (
+          <div className="mt-4 p-4 bg-green-100 border border-green-400 rounded-lg">
+            <p className="text-green-800">Connected! Session {session.sessionID} ready</p>
+            <p className="text-green-700 text-sm">Cluster: {session.clusterID}</p>
+          </div>
+        )}
+      </div>
+    );
   }
 
-  if (gameState === 'game-over') {
+  if (uiState === 'game-over') {
     return <GameOverPanel playerScore={playerScore} cpuScore={cpuScore} onRestart={handleStartGame} />
   }
 

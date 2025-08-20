@@ -1,73 +1,27 @@
 import type { Pod, Node } from '@/types';
 
-export const INITIAL_PODS: Pod[] = [
-  {
-    id: 'pod-1',
-    name: 'pod-banana-alpha',
-    label: 'Banana',
-    requirements: { cpu: 1, memory: 2 },
-    status: 'Pending',
-    nodeId: null,
-    owner: null,
-  },
-  {
-    id: 'pod-2',
-    name: 'pod-chocolate-bravo',
-    label: 'Chocolate',
-    requirements: { cpu: 2, memory: 1 },
-    status: 'Pending',
-    nodeId: null,
-    owner: null,
-  },
-  {
-    id: 'pod-3',
-    name: 'pod-strawberry-charlie',
-    label: 'Strawberry',
-    requirements: { cpu: 1, memory: 3 },
-    status: 'Pending',
-    nodeId: null,
-    owner: null,
-  },
-  {
-    id: 'pod-4',
-    name: 'pod-vanilla-delta',
-    label: 'Vanilla',
-    requirements: { cpu: 2, memory: 4 },
-    status: 'Pending',
-    nodeId: null,
-    owner: null,
-  },
-];
+// Game constants that match the backend configuration
+export const GAME_DURATION_SECONDS = 300; // 5 minutes - updated to match backend
 
-export const INITIAL_PLAYER_NODES: Node[] = [
-  {
-    id: 'player-node-1',
-    name: 'player-node-a',
-    capacity: { cpu: 4, memory: 8 },
-  },
-  {
-    id: 'player-node-2',
-    name: 'player-node-b',
-    capacity: { cpu: 8, memory: 16 },
-  },
-];
+// WebSocket URL - can be overridden via environment variable
+export const DEFAULT_WS_URL = 'ws://localhost:8080/ws';
 
-export const INITIAL_CPU_NODES: Node[] = [
-  {
-    id: 'cpu-node-1',
-    name: 'k8s-node-x',
-    capacity: { cpu: 4, memory: 8 },
-  },
-  {
-    id: 'cpu-node-2',
-    name: 'k8s-node-y',
-    capacity: { cpu: 8, memory: 16 },
-  },
-];
+// Pod label emojis for display
+export const POD_LABEL_EMOJIS = {
+  banana: '🍌',
+  chocolate: '🍫',
+  strawberry: '🍓',
+  vanilla: '🍦',
+} as const;
 
+// Node type display names
+export const NODE_TYPE_LABELS = {
+  player: 'Player Nodes',
+  cpu: 'Kubernetes Scheduler Nodes',
+} as const;
 
+// Legacy constants - these are now handled by the backend
 export const POINTS_PER_POD_PER_SECOND = 10;
 export const GAME_TICK_MS = 1000;
 export const EVENT_TICK_MS = 10000;
-export const GAME_DURATION_SECONDS = 60;
 export const AI_SCHEDULE_INTERVAL_MS = 2500;
