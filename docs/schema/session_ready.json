@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Session Ready Event",
+  "description": "Session info sent after client joins",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "session_ready"
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "sessionID": {
+          "type": "string",
+          "description": "Unique identifier for the session"
+        },
+        "clusterID": {
+          "type": "string", 
+          "description": "Unique identifier for the cluster"
+        },
+        "state": {
+          "type": "string",
+          "enum": ["ClusterReady", "Playing"],
+          "description": "Current session state"
+        }
+      },
+      "required": ["sessionID", "clusterID", "state"],
+      "additionalProperties": false
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event was created"
+    }
+  },
+  "required": ["type", "data", "timestamp"],
+  "additionalProperties": false
+}

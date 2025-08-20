@@ -1,0 +1,154 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Game Update Event",
+  "description": "Periodic game state update sent every second",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "game_update"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event was created"
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "timeLeft": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Time remaining in seconds"
+        },
+        "playerScore": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Current player score"
+        },
+        "cpuScore": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Current Kubernetes scheduler score"
+        },
+        "pods": {
+          "type": "array",
+          "description": "Current state of all pods in the cluster",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique pod identifier"
+              },
+              "name": {
+                "type": "string",
+                "description": "Pod name"
+              },
+              "label": {
+                "type": "string",
+                "enum": ["banana", "chocolate", "strawberry", "vanilla"],
+                "description": "Pod label/type"
+              },
+              "affinity": {
+                "type": "object",
+                "required": ["nodeID"],
+                "additionalProperties": false
+              },
+              "requirements": {
+                "type": "object",
+                "properties": {
+                  "cpu": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "CPU requirement in cores"
+                  },
+                  "memory": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Memory requirement in bytes"
+                  }
+                },
+                "required": ["cpu", "memory"],
+                "additionalProperties": false
+              },
+              "status": {
+                "type": "string",
+                "enum": ["pending", "scheduling", "scheduled", "unscheduled", "terminating"],
+                "description": "Current pod status"
+              },
+              "nodeID": {
+                "type": ["string", "null"],
+                "description": "ID of the node the pod is scheduled to (null if pending)"
+              }
+            },
+            "required": ["id", "name", "label", "requirements", "status"],
+            "additionalProperties": false
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "description": "Current state of all nodes in the cluster",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique node identifier"
+              },
+              "name": {
+                "type": "string",
+                "description": "Node name"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["player", "scheduler"],
+                "description": "Node type - player controllable or scheduler controlled"
+              },
+              "capacity": {
+                "type": "object",
+                "properties": {
+                  "cpu": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Total CPU capacity in cores"
+                  },
+                  "memory": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Total memory capacity in bytes"
+                  }
+                },
+                "required": ["cpu", "memory"],
+                "additionalProperties": false
+              },
+              "used": {
+                "type": "object",
+                "properties": {
+                  "cpu": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Used CPU in cores"
+                  },
+                  "memory": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Used memory in bytes"
+                  }
+                },
+                "required": ["cpu", "memory"],
+                "additionalProperties": false
+              }
+            },
+            "required": ["id", "name", "type", "capacity", "used"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["timeLeft", "playerScore", "cpuScore", "pods", "nodes"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["type", "data", "timestamp"],
+  "additionalProperties": false
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Pod Scheduled Event",
+  "description": "Pod assigned to node event",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "pod_scheduled"
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "podID": {
+          "type": "string",
+          "description": "Unique identifier of the scheduled pod"
+        },
+        "nodeID": {
+          "type": "string",
+          "description": "Unique identifier of the target node"
+        },
+        "scheduledBy": {
+          "type": "string",
+          "enum": ["player", "cpu"],
+          "description": "Who scheduled the pod - player or Kubernetes scheduler"
+        }
+      },
+      "required": ["podID", "nodeID", "scheduledBy"],
+      "additionalProperties": false
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event was created"
+    }
+  },
+  "required": ["type", "data", "timestamp"],
+  "additionalProperties": false
+}

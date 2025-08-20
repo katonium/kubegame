@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Pod Created Event",
+  "description": "New pod available event sent when game engine creates a new pod",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "pod_created"
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique pod identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Pod name"
+        },
+        "label": {
+          "type": "string",
+          "enum": ["banana", "chocolate", "strawberry", "vanilla"],
+          "description": "Pod label/type with emoji representation"
+        },
+        "requirements": {
+          "type": "object",
+          "properties": {
+            "cpu": {
+              "type": "number",
+              "minimum": 0,
+              "description": "CPU requirement in cores"
+            },
+            "memory": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Memory requirement in bytes"
+            }
+          },
+          "required": ["cpu", "memory"],
+          "additionalProperties": false
+        },
+        "namespace": {
+          "type": "string",
+          "enum": ["player", "scheduler"],
+          "description": "Namespace where the pod is created (player or scheduler)"
+        }
+      },
+      "required": ["id", "name", "label", "requirements", "namespace"],
+      "additionalProperties": false
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event was created"
+    }
+  },
+  "required": ["type", "data", "timestamp"],
+  "additionalProperties": false
+}
