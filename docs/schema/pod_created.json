@@ -9,46 +9,8 @@
       "const": "pod_created"
     },
     "data": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique pod identifier"
-        },
-        "name": {
-          "type": "string",
-          "description": "Pod name"
-        },
-        "label": {
-          "type": "string",
-          "enum": ["banana", "chocolate", "strawberry", "vanilla"],
-          "description": "Pod label/type with emoji representation"
-        },
-        "requirements": {
-          "type": "object",
-          "properties": {
-            "cpu": {
-              "type": "number",
-              "minimum": 0,
-              "description": "CPU requirement in cores"
-            },
-            "memory": {
-              "type": "number",
-              "minimum": 0,
-              "description": "Memory requirement in bytes"
-            }
-          },
-          "required": ["cpu", "memory"],
-          "additionalProperties": false
-        },
-        "namespace": {
-          "type": "string",
-          "enum": ["player", "scheduler"],
-          "description": "Namespace where the pod is created (player or scheduler)"
-        }
-      },
-      "required": ["id", "name", "label", "requirements", "namespace"],
-      "additionalProperties": false
+      "$ref": "common/game_info.json",
+      "description": "Complete game state information when new pod is created"
     },
     "timestamp": {
       "type": "string",

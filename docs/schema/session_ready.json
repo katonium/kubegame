@@ -8,32 +8,12 @@
       "type": "string",
       "const": "session_ready"
     },
-    "data": {
-      "type": "object",
-      "properties": {
-        "sessionID": {
-          "type": "string",
-          "description": "Unique identifier for the session"
-        },
-        "clusterID": {
-          "type": "string", 
-          "description": "Unique identifier for the cluster"
-        },
-        "state": {
-          "type": "string",
-          "enum": ["ClusterReady", "Playing"],
-          "description": "Current session state"
-        }
-      },
-      "required": ["sessionID", "clusterID", "state"],
-      "additionalProperties": false
-    },
     "timestamp": {
       "type": "string",
       "format": "date-time",
-      "description": "ISO 8601 timestamp when the event was created"
+      "description": "ISO 8601 timestamp when the message was created"
     }
   },
-  "required": ["type", "data", "timestamp"],
+  "required": ["type", "timestamp"],
   "additionalProperties": false
 }

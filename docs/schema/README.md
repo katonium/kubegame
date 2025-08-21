@@ -6,6 +6,49 @@ This directory contains JSON schemas for all WebSocket communication types in th
 
 All schemas follow the JSON Schema Draft 07 specification and are organized by message type.
 
+### Common Components
+
+Reusable schema components are stored in the `common/` directory:
+
+| Schema File | Description |
+|-------------|-------------|
+| `common/game_info.json` | Complete game state information including scores and separated clusters |
+| `common/cluster_info.json` | Cluster information including pods and nodes |
+| `common/affinity.json` | Pod affinity and anti-affinity rules definition |
+| `common/pod_labels.json` | Enumeration of available pod labels/types |
+
+These common schemas can be referenced using `$ref` in other schemas for better maintainability and consistency.
+
+### Generated Types
+
+Type-safe code generation from JSON schemas:
+
+| Directory | Language | Description |
+|-----------|----------|-------------|
+| `generated_ts/` | TypeScript | Frontend types for React/Vue/Angular applications |
+| `generated_go/` | Go | Backend types for server-side applications |
+
+See [Generated Types Documentation](generated_types_README.md) for usage instructions.
+
+### Sample Data
+
+Example JSON data for testing and reference is stored in the `samples/` directory:
+
+| Sample File | Description |
+|-------------|-------------|
+| `samples/session_ready_sample.json` | Session creation confirmation |
+| `samples/game_started_sample.json` | Game start event with initial state |
+| `samples/game_update_sample.json` | Periodic game state update |
+| `samples/game_over_sample.json` | Game end event with final scores |
+| `samples/pod_created_sample.json` | New pod creation event |
+| `samples/pod_scheduled_sample.json` | Pod scheduling event |
+| `samples/error_sample.json` | Error event with detailed information |
+| `samples/ping_sample.json` | Client ping message |
+| `samples/pong_sample.json` | Response to server ping |
+| `samples/server_ping_sample.json` | Server ping message |
+| `samples/start_game_sample.json` | Game start request |
+| `samples/schedule_pod_sample.json` | Pod scheduling request |
+
 ## Client-to-Server Messages
 
 These are messages sent from the frontend client to the backend server:

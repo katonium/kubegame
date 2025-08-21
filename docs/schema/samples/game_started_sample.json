@@ -1,0 +1,110 @@
+{
+  "type": "game_started",
+  "timestamp": "2025-08-21T12:30:00.000Z",
+  "data": {
+    "timeLeft": 60,
+    "playerScore": 0,
+    "cpuScore": 0,
+    "playerCluster": {
+      "pods": [
+        {
+          "id": "game-12345-player-pod-initial-1",
+          "name": "app-0001",
+          "label": "banana",
+          "affinity": {
+            "podAffinity": {
+              "values": []
+            },
+            "podAntiAffinity": {
+              "values": []
+            },
+            "nodeAffinity": {
+              "values": []
+            },
+            "nodeAntiAffinity": {
+              "values": []
+            }
+          },
+          "requirements": {
+            "cpu": 1,
+            "memory": 2
+          },
+          "status": "pending",
+          "nodeID": null
+        }
+      ],
+      "nodes": [
+        {
+          "id": "player-node-1-cluster-conn123",
+          "name": "worker-01",
+          "type": "player",
+          "capacity": {
+            "cpu": 4,
+            "memory": 8
+          },
+          "used": {
+            "cpu": 0,
+            "memory": 0
+          }
+        },
+        {
+          "id": "player-node-2-cluster-conn123",
+          "name": "worker-02",
+          "type": "player",
+          "capacity": {
+            "cpu": 2,
+            "memory": 4
+          },
+          "used": {
+            "cpu": 0,
+            "memory": 0
+          }
+        }
+      ]
+    },
+    "schedulerCluster": {
+      "pods": [
+        {
+          "id": "game-12345-scheduler-pod-initial-1",
+          "name": "app-0001",
+          "label": "banana",
+          "affinity": {
+            "podAffinity": {
+              "values": []
+            },
+            "podAntiAffinity": {
+              "values": []
+            },
+            "nodeAffinity": {
+              "values": []
+            },
+            "nodeAntiAffinity": {
+              "values": []
+            }
+          },
+          "requirements": {
+            "cpu": 1,
+            "memory": 2
+          },
+          "status": "pending",
+          "nodeID": null
+        }
+      ],
+      "nodes": [
+        {
+          "id": "scheduler-node-1-cluster-conn123",
+          "name": "scheduler-01",
+          "type": "scheduler",
+          "capacity": {
+            "cpu": 8,
+            "memory": 16
+          },
+          "used": {
+            "cpu": 0,
+            "memory": 0
+          }
+        }
+      ]
+    }
+  }
+}

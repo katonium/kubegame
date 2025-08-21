@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "game_info.json",
+  "title": "Game Information",
+  "description": "Complete game state information including scores and cluster data",
+  "type": "object",
+  "properties": {
+    "timeLeft": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Time remaining in seconds"
+    },
+    "playerScore": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Current player score"
+    },
+    "cpuScore": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Current Kubernetes scheduler score"
+    },
+    "playerCluster": {
+      "$ref": "cluster_info.json",
+      "description": "Player-controlled cluster information"
+    },
+    "schedulerCluster": {
+      "$ref": "cluster_info.json",
+      "description": "Kubernetes scheduler-controlled cluster information"
+    }
+  },
+  "required": ["timeLeft", "playerScore", "cpuScore", "playerCluster", "schedulerCluster"],
+  "additionalProperties": false
+}

@@ -8,6 +8,11 @@
       "type": "string",
       "const": "schedule_pod"
     },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the message was created"
+    },
     "data": {
       "type": "object",
       "properties": {
@@ -22,11 +27,6 @@
       },
       "required": ["pod_id", "node_id"],
       "additionalProperties": false
-    },
-    "timestamp": {
-      "type": "string",
-      "format": "date-time",
-      "description": "ISO 8601 timestamp when the message was created"
     }
   },
   "required": ["type", "data", "timestamp"],

@@ -1,0 +1,15 @@
+{
+  "type": "error",
+  "timestamp": "2025-08-21T12:30:45.000Z",
+  "data": {
+    "message": "Insufficient resources on node worker-02",
+    "code": "INSUFFICIENT_RESOURCES",
+    "details": {
+      "nodeID": "player-node-2-cluster-conn123",
+      "requiredCPU": 3,
+      "availableCPU": 2,
+      "requiredMemory": 6,
+      "availableMemory": 4
+    }
+  }
+}

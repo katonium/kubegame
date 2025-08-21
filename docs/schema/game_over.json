@@ -14,21 +14,8 @@
       "description": "ISO 8601 timestamp when the event was created"
     },
     "data": {
-      "type": "object",
-      "properties": {
-        "playerScore": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Final score for the player"
-        },
-        "cpuScore": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Final score for the Kubernetes scheduler"
-        }
-      },
-      "required": ["playerScore", "cpuScore"],
-      "additionalProperties": false
+      "$ref": "common/game_info.json",
+      "description": "Complete game state information when game ends"
     }
   },
   "required": ["type", "data", "timestamp"],

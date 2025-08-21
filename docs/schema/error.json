@@ -39,7 +39,7 @@
           "description": "Optional additional error details"
         }
       },
-      "required": ["message"],
+      "required": ["message", "code"],
       "additionalProperties": false
     }
   },

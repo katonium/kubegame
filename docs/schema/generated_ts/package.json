@@ -1,0 +1,22 @@
+{
+  "name": "@kubegame/api-types",
+  "version": "1.0.0",
+  "description": "TypeScript types for KubeGame WebSocket API",
+  "main": "index.ts",
+  "types": "index.ts",
+  "files": [
+    "*.ts"
+  ],
+  "keywords": [
+    "kubegame",
+    "websocket",
+    "api",
+    "types",
+    "typescript"
+  ],
+  "author": "KubeGame Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "typescript": ">=4.0.0"
+  }
+}

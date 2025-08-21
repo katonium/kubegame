@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "affinity.json",
+  "title": "Pod Affinity Rules",
+  "description": "Reusable affinity rules for pod scheduling",
+  "type": "object",
+  "properties": {
+    "podAffinity": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {
+            "$ref": "pod_labels.json"
+          },
+          "description": "Pod labels that this pod should be co-located with"
+        }
+      },
+      "required": ["values"],
+      "additionalProperties": false
+    },
+    "podAntiAffinity": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {
+            "$ref": "pod_labels.json"
+          },
+          "description": "Pod labels that this pod should not be co-located with"
+        }
+      },
+      "required": ["values"],
+      "additionalProperties": false
+    },
+    "nodeAffinity": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {
+            "$ref": "pod_labels.json"
+          },
+          "description": "Node labels that this pod should be scheduled to"
+        }
+      },
+      "required": ["values"],
+      "additionalProperties": false
+    },
+    "nodeAntiAffinity": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {
+            "$ref": "pod_labels.json"
+          },
+          "description": "Node labels that this pod should not be scheduled to"
+        }
+      },
+      "required": ["values"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["podAffinity", "podAntiAffinity", "nodeAffinity", "nodeAntiAffinity"],
+  "additionalProperties": false
+}

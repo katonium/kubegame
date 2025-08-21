@@ -14,20 +14,8 @@
       "description": "ISO 8601 timestamp when the event was created"
     },
     "data": {
-      "type": "object",
-      "properties": {
-        "gameID": {
-          "type": "string",
-          "description": "Unique identifier for the game instance"
-        },
-        "timeLeft": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Time remaining in seconds (default 300 seconds)"
-        }
-      },
-      "required": ["gameID", "timeLeft"],
-      "additionalProperties": false
+      "$ref": "common/game_info.json",
+      "description": "Complete game state information when game starts"
     }
   },
   "required": ["type", "data", "timestamp"],

@@ -8,9 +8,6 @@
       "type": "string",
       "const": "pong"
     },
-    "data": {
-      "type": "null"
-    },
     "timestamp": {
       "type": "string",
       "format": "date-time",

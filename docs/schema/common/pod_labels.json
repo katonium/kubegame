@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pod_labels.json",
+  "title": "Pod Labels",
+  "description": "Enumeration of available pod labels/types",
+  "type": "string",
+  "enum": ["banana", "chocolate", "strawberry", "vanilla"]
+}
