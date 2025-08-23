@@ -1,0 +1,541 @@
+openapi: 3.0.3
+info:
+  title: KubeGame WebSocket API
+  description: |
+    WebSocket API specification for the KubeGame project. This API handles real-time communication
+    between the client (frontend) and server (backend) for the Kubernetes scheduling game.
+
+    All messages are exchanged via WebSocket connection and follow a consistent structure with
+    `type`, `data`, and `timestamp` fields.
+  version: 1.0.0
+  contact:
+    name: KubeGame API Support
+  license:
+    name: MIT
+
+servers:
+  - url: ws://localhost:8080/ws
+    description: Development WebSocket server
+  - url: wss://api.kubegame.dev/ws
+    description: Production WebSocket server
+
+paths:
+  /ws:
+    post:
+      summary: WebSocket message endpoint (for code generation only)
+      description: This endpoint is used only for code generation purposes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/PingMessage'
+                - $ref: '#/components/schemas/PongMessage'
+                - $ref: '#/components/schemas/StartGameMessage'
+                - $ref: '#/components/schemas/SchedulePodMessage'
+      responses:
+        '200':
+          description: WebSocket response
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SessionReadyEvent'
+                  - $ref: '#/components/schemas/GameStartedEvent'
+                  - $ref: '#/components/schemas/GameOverEvent'
+                  - $ref: '#/components/schemas/GameUpdateEvent'
+                  - $ref: '#/components/schemas/PodCreatedEvent'
+                  - $ref: '#/components/schemas/PodScheduledEvent'
+                  - $ref: '#/components/schemas/ErrorEvent'
+                  - $ref: '#/components/schemas/ServerPingEvent'
+
+components:
+  schemas:
+    # Base message structure
+    BaseMessage:
+      type: object
+      required:
+        - type
+        - timestamp
+      properties:
+        type:
+          type: string
+          description: Message type identifier
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the message was created
+      discriminator:
+        propertyName: type
+
+    # Common components
+    PodLabels:
+      type: string
+      enum: [banana, chocolate, strawberry, vanilla]
+      description: |
+        Enumeration of available pod labels/types:
+        - banana: 🍌
+        - chocolate: 🍫  
+        - strawberry: 🍓
+        - vanilla: 🍦
+
+    Affinity:
+      type: object
+      description: Pod affinity and anti-affinity rules
+      required:
+        - podAffinity
+        - podAntiAffinity
+        - nodeAffinity
+        - nodeAntiAffinity
+      properties:
+        podAffinity:
+          type: object
+          required:
+            - values
+          properties:
+            values:
+              type: array
+              items:
+                $ref: '#/components/schemas/PodLabels'
+              description: Pod labels that this pod should be co-located with
+        podAntiAffinity:
+          type: object
+          required:
+            - values
+          properties:
+            values:
+              type: array
+              items:
+                $ref: '#/components/schemas/PodLabels'
+              description: Pod labels that this pod should not be co-located with
+        nodeAffinity:
+          type: object
+          required:
+            - values
+          properties:
+            values:
+              type: array
+              items:
+                $ref: '#/components/schemas/PodLabels'
+              description: Node labels that this pod should be scheduled to
+        nodeAntiAffinity:
+          type: object
+          required:
+            - values
+          properties:
+            values:
+              type: array
+              items:
+                $ref: '#/components/schemas/PodLabels'
+              description: Node labels that this pod should not be scheduled to
+      additionalProperties: false
+
+    ResourceRequirements:
+      type: object
+      description: CPU and memory resource requirements or capacity
+      required:
+        - cpu
+        - memory
+      properties:
+        cpu:
+          type: number
+          minimum: 0
+          description: CPU requirement/capacity in cores
+        memory:
+          type: number
+          minimum: 0
+          description: Memory requirement/capacity in bytes
+      additionalProperties: false
+
+    PodInfo:
+      type: object
+      description: Pod information including status and resource requirements
+      required:
+        - id
+        - name
+        - label
+        - affinity
+        - requirements
+        - status
+      properties:
+        id:
+          type: string
+          description: Unique pod identifier
+        name:
+          type: string
+          description: Pod name
+        label:
+          $ref: '#/components/schemas/PodLabels'
+        affinity:
+          $ref: '#/components/schemas/Affinity'
+        requirements:
+          $ref: '#/components/schemas/ResourceRequirements'
+        status:
+          type: string
+          enum: [pending, scheduling, scheduled, unscheduled, terminating]
+          description: Current pod status
+        nodeID:
+          type: string
+          nullable: true
+          description: ID of the node the pod is scheduled to (null if pending)
+      additionalProperties: false
+
+    NodeInfo:
+      type: object
+      description: Node information including capacity and usage
+      required:
+        - id
+        - name
+        - type
+        - capacity
+        - used
+      properties:
+        id:
+          type: string
+          description: Unique node identifier
+        name:
+          type: string
+          description: Node name
+        type:
+          type: string
+          enum: [player, scheduler]
+          description: Node type - player controllable or scheduler controlled
+        capacity:
+          $ref: '#/components/schemas/ResourceRequirements'
+        used:
+          $ref: '#/components/schemas/ResourceRequirements'
+      additionalProperties: false
+
+    ClusterInfo:
+      type: object
+      description: Information about a cluster including its pods and nodes
+      required:
+        - pods
+        - nodes
+      properties:
+        pods:
+          type: array
+          description: Current state of all pods in the cluster
+          items:
+            $ref: '#/components/schemas/PodInfo'
+        nodes:
+          type: array
+          description: Current state of all nodes in the cluster
+          items:
+            $ref: '#/components/schemas/NodeInfo'
+      additionalProperties: false
+
+    GameInfo:
+      type: object
+      description: Complete game state information including scores and cluster data
+      required:
+        - timeLeft
+        - playerScore
+        - cpuScore
+        - playerCluster
+        - schedulerCluster
+      properties:
+        timeLeft:
+          type: integer
+          minimum: 0
+          description: Time remaining in seconds
+        playerScore:
+          type: integer
+          minimum: 0
+          description: Current player score
+        cpuScore:
+          type: integer
+          minimum: 0
+          description: Current Kubernetes scheduler score
+        playerCluster:
+          $ref: '#/components/schemas/ClusterInfo'
+        schedulerCluster:
+          $ref: '#/components/schemas/ClusterInfo'
+      additionalProperties: false
+
+    # Client-to-Server Messages
+    PingMessage:
+      allOf:
+        - $ref: '#/components/schemas/BaseMessage'
+        - type: object
+          properties:
+            type:
+              type: string
+              const: ping
+          required:
+            - type
+      additionalProperties: false
+
+    PongMessage:
+      allOf:
+        - $ref: '#/components/schemas/BaseMessage'
+        - type: object
+          properties:
+            type:
+              type: string
+              const: pong
+          required:
+            - type
+      additionalProperties: false
+
+    StartGameMessage:
+      allOf:
+        - $ref: '#/components/schemas/BaseMessage'
+        - type: object
+          properties:
+            type:
+              type: string
+              const: start_game
+          required:
+            - type
+      additionalProperties: false
+
+    SchedulePodMessage:
+      allOf:
+        - $ref: '#/components/schemas/BaseMessage'
+        - type: object
+          required:
+            - type
+            - data
+          properties:
+            type:
+              type: string
+              const: schedule_pod
+            data:
+              type: object
+              required:
+                - pod_id
+                - node_id
+              properties:
+                pod_id:
+                  type: string
+                  description: Unique identifier of the pod to schedule
+                node_id:
+                  type: string
+                  description: Unique identifier of the target node
+              additionalProperties: false
+      additionalProperties: false
+
+    # Server-to-Client Events
+    SessionReadyEvent:
+      allOf:
+        - $ref: '#/components/schemas/BaseMessage'
+        - type: object
+          properties:
+            type:
+              type: string
+              const: session_ready
+          required:
+            - type
+      additionalProperties: false
+
+    GameStartedEvent:
+      allOf:
+        - $ref: '#/components/schemas/BaseMessage'
+        - type: object
+          required:
+            - type
+            - data
+          properties:
+            type:
+              type: string
+              const: game_started
+            data:
+              $ref: '#/components/schemas/GameInfo'
+      additionalProperties: false
+
+    GameOverEvent:
+      allOf:
+        - $ref: '#/components/schemas/BaseMessage'
+        - type: object
+          required:
+            - type
+            - data
+          properties:
+            type:
+              type: string
+              const: game_over
+            data:
+              $ref: '#/components/schemas/GameInfo'
+      additionalProperties: false
+
+    GameUpdateEvent:
+      allOf:
+        - $ref: '#/components/schemas/BaseMessage'
+        - type: object
+          required:
+            - type
+            - data
+          properties:
+            type:
+              type: string
+              const: game_update
+            data:
+              $ref: '#/components/schemas/GameInfo'
+      additionalProperties: false
+
+    PodCreatedEvent:
+      allOf:
+        - $ref: '#/components/schemas/BaseMessage'
+        - type: object
+          required:
+            - type
+            - data
+          properties:
+            type:
+              type: string
+              const: pod_created
+            data:
+              $ref: '#/components/schemas/GameInfo'
+      additionalProperties: false
+
+    PodScheduledEvent:
+      allOf:
+        - $ref: '#/components/schemas/BaseMessage'
+        - type: object
+          required:
+            - type
+            - data
+          properties:
+            type:
+              type: string
+              const: pod_scheduled
+            data:
+              $ref: '#/components/schemas/GameInfo'
+      additionalProperties: false
+
+    ErrorEvent:
+      allOf:
+        - $ref: '#/components/schemas/BaseMessage'
+        - type: object
+          required:
+            - type
+            - data
+          properties:
+            type:
+              type: string
+              const: error
+            data:
+              type: object
+              required:
+                - message
+                - code
+              properties:
+                message:
+                  type: string
+                  description: Human-readable error description
+                code:
+                  type: string
+                  enum:
+                    - POD_NOT_FOUND
+                    - NODE_NOT_FOUND
+                    - INSUFFICIENT_RESOURCES
+                    - INVALID_SESSION
+                    - GAME_NOT_RUNNING
+                    - CLUSTER_NOT_READY
+                    - CROSS_SESSION_ACCESS
+                    - INVALID_REQUEST
+                  description: Error code for programmatic handling
+                details:
+                  type: object
+                  description: Optional additional error details
+              additionalProperties: false
+      additionalProperties: false
+
+    ServerPingEvent:
+      allOf:
+        - $ref: '#/components/schemas/BaseMessage'
+        - type: object
+          properties:
+            type:
+              type: string
+              const: ping
+          required:
+            - type
+      additionalProperties: false
+
+  examples:
+    PingMessageExample:
+      summary: Client ping message
+      value:
+        type: ping
+        timestamp: "2023-10-01T12:00:00Z"
+
+    SchedulePodExample:
+      summary: Schedule pod message
+      value:
+        type: schedule_pod
+        timestamp: "2023-10-01T12:00:00Z"
+        data:
+          pod_id: "pod-123"
+          node_id: "worker-01"
+
+    GameUpdateExample:
+      summary: Game state update
+      value:
+        type: game_update
+        timestamp: "2023-10-01T12:00:01Z"
+        data:
+          timeLeft: 250
+          playerScore: 5
+          cpuScore: 3
+          playerCluster:
+            nodes:
+              - id: "worker-01"
+                name: "worker-01"
+                type: "player"
+                capacity:
+                  cpu: 2
+                  memory: 4294967296
+                used:
+                  cpu: 0.5
+                  memory: 1073741824
+            pods:
+              - id: "pod-123"
+                name: "test-pod"
+                label: "banana"
+                status: "pending"
+                nodeID: null
+                requirements:
+                  cpu: 0.1
+                  memory: 134217728
+                affinity:
+                  podAffinity:
+                    values: []
+                  podAntiAffinity:
+                    values: []
+                  nodeAffinity:
+                    values: []
+                  nodeAntiAffinity:
+                    values: []
+          schedulerCluster:
+            nodes:
+              - id: "scheduler-01"
+                name: "scheduler-01"
+                type: "scheduler"
+                capacity:
+                  cpu: 2
+                  memory: 4294967296
+                used:
+                  cpu: 0
+                  memory: 0
+            pods: []
+
+    ErrorEventExample:
+      summary: Error event
+      value:
+        type: error
+        timestamp: "2023-10-01T12:00:00Z"
+        data:
+          message: "Pod not found"
+          code: "POD_NOT_FOUND"
+          details:
+            pod_id: "pod-invalid"
+
+tags:
+  - name: client-messages
+    description: Messages sent from client to server
+  - name: server-events
+    description: Events sent from server to client
+  - name: heartbeat
+    description: Ping/pong heartbeat messages

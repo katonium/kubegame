@@ -1,8 +1,0 @@
-{
-  "type": "schedule_pod",
-  "timestamp": "2025-08-21T12:30:42.000Z",
-  "data": {
-    "pod_id": "game-12345-player-pod-1692616500000",
-    "node_id": "player-node-1-cluster-conn123"
-  }
-}

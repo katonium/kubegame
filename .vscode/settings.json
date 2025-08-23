@@ -1,4 +1,8 @@
 {
+    "workbench.colorCustomizations": {
+        "diffEditor.insertedTextBackground": "#33669966",
+        "diffEditor.removedTextBackground": "#FF000066"
+    },
     "chat.tools.terminal.autoApprove": {
         "task *": true,
         "cd": true,

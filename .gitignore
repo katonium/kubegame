@@ -33,3 +33,6 @@ go.work.sum
 
 # Build artifacts
 build/
+
+# Generated artifacts
+generated/

@@ -1,90 +1,65 @@
 # KubeGame WebSocket API Schema Documentation
 
-This directory contains JSON schemas for all WebSocket communication types in the KubeGame project.
+This directory contains the API specification for all WebSocket communication types in the KubeGame project.
 
 ## Schema Organization
 
-All schemas follow the JSON Schema Draft 07 specification and are organized by message type.
+The API is now defined using **OpenAPI 3.0.3** specification with automatic code generation for Go and TypeScript.
 
-### Common Components
+### OpenAPI Specification
 
-Reusable schema components are stored in the `common/` directory:
+| File | Description |
+|------|-------------|
+| `websocket-api.yaml` | **Main OpenAPI 3.0.3 specification** containing all WebSocket message types and schemas |
 
-| Schema File | Description |
-|-------------|-------------|
-| `common/game_info.json` | Complete game state information including scores and separated clusters |
-| `common/cluster_info.json` | Cluster information including pods and nodes |
-| `common/affinity.json` | Pod affinity and anti-affinity rules definition |
-| `common/pod_labels.json` | Enumeration of available pod labels/types |
+## Automatic Code Generation
 
-These common schemas can be referenced using `$ref` in other schemas for better maintainability and consistency.
+Type-safe code generation from OpenAPI specification:
 
-### Generated Types
+### Backend (Go)
+- **Location**: `backend/api/generated/types.go`
+- **Tool**: [oapi-codegen](https://github.com/oapi-codegen/oapi-codegen)
+- **Command**: `cd backend/api && task generate`
 
-Type-safe code generation from JSON schemas:
+### Frontend (TypeScript)
+- **Location**: `frontend/src/types/generated/api.ts`
+- **Tool**: [openapi-typescript](https://github.com/openapi-typescript/openapi-typescript)
+- **Command**: `cd frontend && task generate`
 
-| Directory | Language | Description |
-|-----------|----------|-------------|
-| `generated_ts/` | TypeScript | Frontend types for React/Vue/Angular applications |
-| `generated_go/` | Go | Backend types for server-side applications |
+### Usage Examples
 
-See [Generated Types Documentation](generated_types_README.md) for usage instructions.
+**Go (Backend):**
+```go
+import "github.com/katonium/kubegame/backend/generated"
 
-### Sample Data
-
-Example JSON data for testing and reference is stored in the `samples/` directory:
-
-| Sample File | Description |
-|-------------|-------------|
-| `samples/session_ready_sample.json` | Session creation confirmation |
-| `samples/game_started_sample.json` | Game start event with initial state |
-| `samples/game_update_sample.json` | Periodic game state update |
-| `samples/game_over_sample.json` | Game end event with final scores |
-| `samples/pod_created_sample.json` | New pod creation event |
-| `samples/pod_scheduled_sample.json` | Pod scheduling event |
-| `samples/error_sample.json` | Error event with detailed information |
-| `samples/ping_sample.json` | Client ping message |
-| `samples/pong_sample.json` | Response to server ping |
-| `samples/server_ping_sample.json` | Server ping message |
-| `samples/start_game_sample.json` | Game start request |
-| `samples/schedule_pod_sample.json` | Pod scheduling request |
-
-## Client-to-Server Messages
-
-These are messages sent from the frontend client to the backend server:
-
-| Schema File | Message Type | Description |
-|-------------|--------------|-------------|
-| `ping.json` | `ping` | Heartbeat check from client |
-| `pong.json` | `pong` | Response to server ping |
-| `start_game.json` | `start_game` | Start a new game session |
-| `schedule_pod.json` | `schedule_pod` | Player schedules a pod to a node |
-
-## Server-to-Client Events
-
-These are events sent from the backend server to the frontend client:
-
-| Schema File | Event Type | Description |
-|-------------|------------|-------------|
-| `session_ready.json` | `session_ready` | Session created and ready |
-| `game_started.json` | `game_started` | Game has started successfully |
-| `game_over.json` | `game_over` | Game ended (timer expired) |
-| `game_update.json` | `game_update` | Periodic game state update (every 1s) |
-| `pod_created.json` | `pod_created` | New pod created by game engine |
-| `pod_scheduled.json` | `pod_scheduled` | Pod assigned to a node |
-| `error.json` | `error` | Error occurred during operation |
-| `server_ping.json` | `ping` | Server ping for heartbeat |
-
-## Message Structure
-
-All messages follow this general structure:
-
-```json
-{
-  "type": "message_type",
-  "data": { /* payload varies by message type */ },
-  "timestamp": "2023-10-01T12:00:00Z"
+// Use generated types
+var gameUpdate generated.GameUpdateEvent
+gameUpdate.Type = "game_update"
+gameUpdate.Timestamp = time.Now()
+gameUpdate.Data = generated.GameInfo{
+    TimeLeft: 300,
+    PlayerScore: 5,
+    // ...
 }
+```
+
+**TypeScript (Frontend):**
+```typescript
+import type { components } from '@/types/generated/api';
+
+type GameUpdateEvent = components['schemas']['GameUpdateEvent'];
+type PodInfo = components['schemas']['PodInfo'];
+
+// Use generated types
+const gameUpdate: GameUpdateEvent = {
+  type: 'game_update',
+  timestamp: new Date().toISOString(),
+  data: {
+    timeLeft: 300,
+    playerScore: 5,
+    // ...
+  }
+};
 ```
 
 ### Timestamp Field
@@ -103,60 +78,7 @@ These schemas can be used for:
 - **Documentation**: Provide clear API documentation
 - **Testing**: Ensure message format compliance in tests
 
-## Examples
-
-### Client Message Example
-```json
-{
-  "type": "schedule_pod",
-  "data": {
-    "pod_id": "pod-123",
-    "node_id": "worker-01"
-  },
-  "timestamp": "2023-10-01T12:00:00Z"
-}
-```
-
-### Server Event Example
-```json
-{
-  "type": "game_update",
-  "data": {
-    "timeLeft": 250,
-    "playerScore": 5,
-    "cpuScore": 3,
-    "pods": [...],
-    "nodes": [...]
-  },
-  "timestamp": "2023-10-01T12:00:01Z"
-}
-```
-
-## Validation Tools
-
-You can validate messages against these schemas using:
-
-- **JavaScript/TypeScript**: [ajv](https://ajv.js.org/)
-- **Go**: [gojsonschema](https://github.com/xeipuuv/gojsonschema)
-- **Python**: [jsonschema](https://python-jsonschema.readthedocs.io/)
-- **Online**: [JSON Schema Validator](https://www.jsonschemavalidator.net/)
-
 ## Game-Specific Types
-
-### Pod Labels
-Pods are assigned one of four emoji-based labels:
-- `banana` 🍌
-- `chocolate` 🍫
-- `strawberry` 🍓
-- `vanilla` 🍦
-
-### Node Types
-- `player` - Nodes controllable by the player (worker-01 through worker-04)
-- `scheduler` - Nodes controlled by Kubernetes scheduler (scheduler-01)
-
-### Session States
-- `ClusterReady` - Session created, cluster ready, but game not started
-- `Playing` - Game is actively running
 
 ### Error Codes
 Common error codes for programmatic handling:

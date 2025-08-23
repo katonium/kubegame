@@ -1,0 +1,6 @@
+package: generated
+output: generated/types.go
+generate:
+  models: true
+  client: false
+  embedded-spec: false
