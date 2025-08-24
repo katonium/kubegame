@@ -21,17 +21,17 @@ A real-time multiplayer game where players compete against the Kubernetes schedu
 1. Navigate to the backend directory:
 ```bash
 cd backend/api
+task setup
 ```
 
-2. Install dependencies:
-```bash
-go mod tidy
-```
-
-3. Build and run the backend:
+2. Build and run the backend:
 ```bash
 task build
-./build/app
+```
+
+3. Start the backend server:
+```bash
+task run
 ```
 
 The backend will start on port 8080 with WebSocket endpoint at `/ws`.
@@ -70,7 +70,6 @@ The frontend will start on port 3000.
 - **Player vs. Kubernetes Scheduler**: Compete against the real Kubernetes scheduler
 - **Resource Management**: Consider CPU and memory requirements when scheduling
 - **Live Updates**: All game events are synchronized in real-time via WebSocket
-- **Clean Architecture**: Backend follows clean architecture principles with proper separation of concerns
 
 ## Technology Stack
 
@@ -79,7 +78,7 @@ The frontend will start on port 3000.
 - **uber-go/fx**: Dependency injection framework
 - **gorilla/websocket**: WebSocket communication
 - **client-go**: Kubernetes client library with fake cluster
-- **Clean Architecture**: Domain, Use Case, and Infrastructure layers
+- **Clean Architecture**: Backend follows clean architecture principles with proper separation of concerns. Domain, Use Case, and Infrastructure layers.
 
 ### Frontend
 - **Next.js 15**: React framework
@@ -91,6 +90,8 @@ The frontend will start on port 3000.
 
 ```
 kubegame/
+├── docs/
+│   └── schema/            # WebSocket message schemas
 ├── backend/
 │   └── api/
 │       ├── domain/          # Business entities and interfaces

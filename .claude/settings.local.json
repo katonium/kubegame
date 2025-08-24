@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(task generate)",
+      "Bash(task api:generate)",
+      "Bash(task build)",
+      "Bash(task api:build)",
+      "Bash(cat:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

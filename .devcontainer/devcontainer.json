@@ -8,7 +8,8 @@
         "github.copilot-workspace",
         "github.vscode-github-actions",
         "Anthropic.claude-code",
-        "bierner.markdown-mermaid"
+        "bierner.markdown-mermaid",
+        "golang.go"
       ]
     }
   },
