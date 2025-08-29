@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	adapter "github.com/katonium/kubegame/backend/adapter/kubernetes"
 	"github.com/katonium/kubegame/backend/domain/entity"
+	"github.com/katonium/kubegame/backend/domain/service"
+	"github.com/katonium/kubegame/backend/util/logger"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,24 +14,22 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-// fakeClient is a thin wrapper around Kubernetes fake client
-// that implements the Client interface using actual Kubernetes API objects
-type fakeClient struct {
-	clusterID string
-	client    kubernetes.Interface
+type kubernetesService struct {
+	client kubernetes.Interface
 }
 
-// NewFakeClient creates a new fake Kubernetes client using k8s fake clientset
-func NewFakeClient(clusterID string) adapter.Client {
-	return &fakeClient{
-		clusterID: clusterID,
-		client:    fake.NewSimpleClientset(),
+func NewKubernetesService() service.KubernetesService {
+	// Create fake Kubernetes client for game simulation
+	client := fake.NewSimpleClientset()
+
+	return &kubernetesService{
+		client: client,
 	}
 }
 
-// Node operations
+func (k *kubernetesService) CreateNode(ctx context.Context, node *entity.Node) error {
+	logger.Debug(ctx, "Creating node %s in Kubernetes cluster", node.ID)
 
-func (f *fakeClient) CreateNode(ctx context.Context, namespace string, node *entity.Node) error {
 	k8sNode := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: node.ID,
@@ -38,7 +37,6 @@ func (f *fakeClient) CreateNode(ctx context.Context, namespace string, node *ent
 				"node-type":              node.NodeType,
 				"kubegame.io/node-id":    node.ID,
 				"kubegame.io/node-name":  node.Name,
-				"kubegame.io/namespace":  namespace,
 				"kubernetes.io/hostname": node.ID,
 			},
 		},
@@ -60,52 +58,49 @@ func (f *fakeClient) CreateNode(ctx context.Context, namespace string, node *ent
 		},
 	}
 
-	_, err := f.client.CoreV1().Nodes().Create(ctx, k8sNode, metav1.CreateOptions{})
+	_, err := k.client.CoreV1().Nodes().Create(ctx, k8sNode, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create node in Kubernetes: %w", err)
 	}
 
+	logger.Info(ctx, "Created node %s (%s) with capacity %d CPU, %d GB memory",
+		node.ID, node.Name, node.Capacity.CPU, node.Capacity.Memory)
+
 	return nil
 }
 
-func (f *fakeClient) GetNodes(ctx context.Context, namespace *string) ([]*entity.Node, error) {
-	var labelSelector string
-	if namespace != nil {
-		labelSelector = "kubegame.io/namespace=" + *namespace
-	}
-
-	nodeList, err := f.client.CoreV1().Nodes().List(ctx, metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
+func (k *kubernetesService) GetNodes(ctx context.Context) ([]*entity.Node, error) {
+	nodeList, err := k.client.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list nodes from Kubernetes: %w", err)
 	}
 
 	nodes := make([]*entity.Node, 0, len(nodeList.Items))
 	for _, k8sNode := range nodeList.Items {
-		node := f.convertK8sNodeToEntity(&k8sNode)
+		node := k.convertK8sNodeToEntity(&k8sNode)
 		nodes = append(nodes, node)
 	}
 
 	return nodes, nil
 }
 
-func (f *fakeClient) DeleteNode(ctx context.Context, namespace string, nodeID string) error {
-	err := f.client.CoreV1().Nodes().Delete(ctx, nodeID, metav1.DeleteOptions{})
+func (k *kubernetesService) DeleteNode(ctx context.Context, nodeID string) error {
+	err := k.client.CoreV1().Nodes().Delete(ctx, nodeID, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to delete node from Kubernetes: %w", err)
 	}
 
+	logger.Info(ctx, "Deleted node %s from Kubernetes cluster", nodeID)
 	return nil
 }
 
-// Pod operations
+func (k *kubernetesService) CreatePod(ctx context.Context, pod *entity.Pod) error {
+	logger.Debug(ctx, "Creating pod %s in Kubernetes cluster", pod.ID)
 
-func (f *fakeClient) CreatePod(ctx context.Context, namespace string, pod *entity.Pod) error {
 	k8sPod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      pod.ID,
-			Namespace: namespace,
+			Namespace: "default",
 			Labels: map[string]string{
 				"kubegame.io/pod-id":    pod.ID,
 				"kubegame.io/pod-name":  pod.Name,
@@ -141,42 +136,72 @@ func (f *fakeClient) CreatePod(ctx context.Context, namespace string, pod *entit
 		}
 	}
 
-	_, err := f.client.CoreV1().Pods(namespace).Create(ctx, k8sPod, metav1.CreateOptions{})
+	_, err := k.client.CoreV1().Pods("default").Create(ctx, k8sPod, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create pod in Kubernetes: %w", err)
 	}
 
+	logger.Info(ctx, "Created pod %s (%s) requiring %d CPU, %d GB memory",
+		pod.ID, pod.Name, pod.Requirements.CPU, pod.Requirements.Memory)
+
 	return nil
 }
 
-func (f *fakeClient) GetPods(ctx context.Context, namespace string) ([]*entity.Pod, error) {
-	podList, err := f.client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+func (k *kubernetesService) GetPods(ctx context.Context) ([]*entity.Pod, error) {
+	podList, err := k.client.CoreV1().Pods("default").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pods from Kubernetes: %w", err)
 	}
 
 	pods := make([]*entity.Pod, 0, len(podList.Items))
 	for _, k8sPod := range podList.Items {
-		pod := f.convertK8sPodToEntity(&k8sPod)
+		pod := k.convertK8sPodToEntity(&k8sPod)
 		pods = append(pods, pod)
 	}
 
 	return pods, nil
 }
 
-func (f *fakeClient) DeletePod(ctx context.Context, namespace string, podID string) error {
-	err := f.client.CoreV1().Pods(namespace).Delete(ctx, podID, metav1.DeleteOptions{})
+func (k *kubernetesService) UpdatePodStatus(ctx context.Context, podID string, status entity.PodStatus) error {
+	k8sPod, err := k.client.CoreV1().Pods("default").Get(ctx, podID, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to delete pod from Kubernetes: %w", err)
+		return fmt.Errorf("failed to get pod from Kubernetes: %w", err)
+	}
+
+	// Update pod phase based on entity status
+	switch status {
+	case entity.PodStatusPending:
+		k8sPod.Status.Phase = corev1.PodPending
+	case entity.PodStatusRunning:
+		k8sPod.Status.Phase = corev1.PodRunning
+	case entity.PodStatusFailed:
+		k8sPod.Status.Phase = corev1.PodFailed
+	case entity.PodStatusTerminated:
+		k8sPod.Status.Phase = corev1.PodSucceeded
+	}
+
+	_, err = k.client.CoreV1().Pods("default").UpdateStatus(ctx, k8sPod, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to update pod status in Kubernetes: %w", err)
 	}
 
 	return nil
 }
 
-// Scheduling operations
+func (k *kubernetesService) DeletePod(ctx context.Context, podID string) error {
+	err := k.client.CoreV1().Pods("default").Delete(ctx, podID, metav1.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to delete pod from Kubernetes: %w", err)
+	}
 
-func (f *fakeClient) SchedulePod(ctx context.Context, namespace string, podID string, nodeID string) error {
-	k8sPod, err := f.client.CoreV1().Pods(namespace).Get(ctx, podID, metav1.GetOptions{})
+	logger.Info(ctx, "Deleted pod %s from Kubernetes cluster", podID)
+	return nil
+}
+
+func (k *kubernetesService) SchedulePod(ctx context.Context, podID string, nodeID string) error {
+	logger.Debug(ctx, "Scheduling pod %s to node %s", podID, nodeID)
+
+	k8sPod, err := k.client.CoreV1().Pods("default").Get(ctx, podID, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get pod from Kubernetes: %w", err)
 	}
@@ -185,17 +210,35 @@ func (f *fakeClient) SchedulePod(ctx context.Context, namespace string, podID st
 	k8sPod.Spec.NodeName = nodeID
 	k8sPod.Status.Phase = corev1.PodRunning
 
-	_, err = f.client.CoreV1().Pods(namespace).Update(ctx, k8sPod, metav1.UpdateOptions{})
+	_, err = k.client.CoreV1().Pods("default").Update(ctx, k8sPod, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to schedule pod in Kubernetes: %w", err)
 	}
 
+	logger.Info(ctx, "Scheduled pod %s to node %s", podID, nodeID)
 	return nil
 }
 
-func (f *fakeClient) GetNodeResourceUsage(ctx context.Context, namespace string, nodeID string) (*entity.ResourceRequirements, error) {
+func (k *kubernetesService) CanSchedulePod(ctx context.Context, pod *entity.Pod, node *entity.Node) (bool, error) {
+	usage, err := k.GetNodeResourceUsage(ctx, node.ID)
+	if err != nil {
+		return false, err
+	}
+
+	availableCPU := node.Capacity.CPU - usage.CPU
+	availableMemory := node.Capacity.Memory - usage.Memory
+
+	canSchedule := availableCPU >= pod.Requirements.CPU && availableMemory >= pod.Requirements.Memory
+
+	logger.Debug(ctx, "Node %s availability: CPU %d/%d, Memory %d/%d, can schedule: %v",
+		node.ID, availableCPU, node.Capacity.CPU, availableMemory, node.Capacity.Memory, canSchedule)
+
+	return canSchedule, nil
+}
+
+func (k *kubernetesService) GetNodeResourceUsage(ctx context.Context, nodeID string) (*entity.ResourceRequirements, error) {
 	// Get all pods scheduled on this node
-	podList, err := f.client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+	podList, err := k.client.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
 		FieldSelector: "spec.nodeName=" + nodeID,
 	})
 	if err != nil {
@@ -224,9 +267,7 @@ func (f *fakeClient) GetNodeResourceUsage(ctx context.Context, namespace string,
 	}, nil
 }
 
-// Helper conversion methods
-
-func (f *fakeClient) convertK8sNodeToEntity(k8sNode *corev1.Node) *entity.Node {
+func (k *kubernetesService) convertK8sNodeToEntity(k8sNode *corev1.Node) *entity.Node {
 	cpuCapacity := int(k8sNode.Status.Capacity.Cpu().Value())
 	memoryCapacity := int(k8sNode.Status.Capacity.Memory().Value() / (1024 * 1024 * 1024))
 
@@ -251,7 +292,7 @@ func (f *fakeClient) convertK8sNodeToEntity(k8sNode *corev1.Node) *entity.Node {
 	}
 }
 
-func (f *fakeClient) convertK8sPodToEntity(k8sPod *corev1.Pod) *entity.Pod {
+func (k *kubernetesService) convertK8sPodToEntity(k8sPod *corev1.Pod) *entity.Pod {
 	// Extract resource requirements from first container
 	cpuReq := 0
 	memoryReq := 0
