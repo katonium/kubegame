@@ -3,14 +3,16 @@ package repository
 import (
 	"context"
 	"time"
+
 	"github.com/katonium/kubegame/backend/domain/entity"
 )
 
+// GameRepository is a simple key-value store to store game sessions.
 type GameRepository interface {
-	CreateGame(ctx context.Context, game *entity.Game) error
-	GetGame(ctx context.Context, gameID string) (*entity.Game, error)
-	UpdateGame(ctx context.Context, game *entity.Game) error
-	DeleteGame(ctx context.Context, gameID string) error
+	Put(ctx context.Context, game *entity.Game) error
+	Get(ctx context.Context, gameID string) (*entity.Game, error)
+	Update(ctx context.Context, game *entity.Game) error
+	Delete(ctx context.Context, gameID string) error
 }
 
 type PodRepository interface {

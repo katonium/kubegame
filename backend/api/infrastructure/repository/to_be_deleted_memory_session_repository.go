@@ -11,9 +11,9 @@ import (
 )
 
 type memorySessionRepository struct {
-	sessions          map[string]*entity.GameSession // indexed by connectionID
-	sessionsByID      map[string]*entity.GameSession // indexed by sessionID
-	mu                sync.RWMutex
+	sessions     map[string]*entity.GameSession // indexed by connectionID
+	sessionsByID map[string]*entity.GameSession // indexed by sessionID
+	mu           sync.RWMutex
 }
 
 func NewMemorySessionRepository() repository.GameSessionRepository {

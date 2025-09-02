@@ -138,11 +138,11 @@ components:
         - memory
       properties:
         cpu:
-          type: number
+          type: integer
           minimum: 0
           description: CPU requirement/capacity in cores
         memory:
-          type: number
+          type: integer
           minimum: 0
           description: Memory requirement/capacity in bytes
       additionalProperties: false

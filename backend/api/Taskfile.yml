@@ -16,6 +16,7 @@ tasks:
       - cmd: go install github.com/UnnoTed/fileb0x@v1.1.4
       - cmd: go install go.uber.org/mock/mockgen@v0.4.0
       - cmd: go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
+      - cmd: go install golang.org/x/tools/cmd/goimports@latest
 
   clean:
     desc: Clean workspace
@@ -46,6 +47,38 @@ tasks:
       - task: cleanMock
     cmds:
       - cmd: bash ./sh/generate_mock.sh
+
+  fmt:
+    desc: Format code
+    cmds:
+      - cmd: gofmt -w .
+      - cmd: goimports -w .
+
+  lint:
+    desc: Lint code
+    cmds:
+      - task: check-go-fmt
+      - task: check-go-imports
+
+  check-go-fmt:
+    desc: Check if all Go files are correctly formatted with gofmt and goimports.
+    cmds:
+      - |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "Error: The following Go files are not formatted correctly:"
+          gofmt -l .
+          exit 1
+        fi
+
+  check-go-imports:
+    desc: Check if all Go files have correct imports with goimports.
+    cmds:
+      - |
+        if [ -n "$(goimports -l .)" ]; then
+          echo "Error: The following Go files have incorrect imports:"
+          goimports -l .
+          exit 1
+        fi
 
   build:
     desc: Build application

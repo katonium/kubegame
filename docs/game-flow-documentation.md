@@ -10,7 +10,7 @@ This document describes the complete message flow and game sequence for the Kube
 graph LR
     subgraph "Backend"
         WebSocket --> GameSession[Game Session Service]
-        WebSocket --> GameUseCase[Game Use Case]
+        WebSocket --> GameInteractor[Game Use Case]
         WebSocket --> GameEngine[Game Engine Use Case]
         
         GameSession --> SessionRepo[Session Repository]
@@ -114,7 +114,7 @@ sequenceDiagram
     GS->>GS: CreateCluster(connectionID)
     GS->>Repos: Create initial nodes (for player and for k8s scheduler)
     GS-->>WS: Session created
-    WS->>F: {"type": "session_created", "data": session}
+    WS->>F: {"type": "session_ready", "data": session}
 
     Note over F,Repos: Session State: ClusterReady
     Note over F,Repos: Game NOT started - waiting for frontend

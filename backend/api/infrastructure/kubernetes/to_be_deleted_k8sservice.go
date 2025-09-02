@@ -34,7 +34,7 @@ func (k *kubernetesService) CreateNode(ctx context.Context, node *entity.Node) e
 		ObjectMeta: metav1.ObjectMeta{
 			Name: node.ID,
 			Labels: map[string]string{
-				"node-type":              node.NodeType,
+				// "node-type":              node.NodeType,
 				"kubegame.io/node-id":    node.ID,
 				"kubegame.io/node-name":  node.Name,
 				"kubernetes.io/hostname": node.ID,
@@ -271,10 +271,10 @@ func (k *kubernetesService) convertK8sNodeToEntity(k8sNode *corev1.Node) *entity
 	cpuCapacity := int(k8sNode.Status.Capacity.Cpu().Value())
 	memoryCapacity := int(k8sNode.Status.Capacity.Memory().Value() / (1024 * 1024 * 1024))
 
-	nodeType := "cpu" // default
-	if nodeTypeLabel, exists := k8sNode.Labels["node-type"]; exists {
-		nodeType = nodeTypeLabel
-	}
+	// nodeType := "cpu" // default
+	// if nodeTypeLabel, exists := k8sNode.Labels["node-type"]; exists {
+	// 	nodeType = nodeTypeLabel
+	// }
 
 	nodeName := k8sNode.Name
 	if nameLabel, exists := k8sNode.Labels["kubegame.io/node-name"]; exists {
@@ -282,9 +282,9 @@ func (k *kubernetesService) convertK8sNodeToEntity(k8sNode *corev1.Node) *entity
 	}
 
 	return &entity.Node{
-		ID:       k8sNode.Name,
-		Name:     nodeName,
-		NodeType: nodeType,
+		ID:   k8sNode.Name,
+		Name: nodeName,
+		// NodeType: nodeType,
 		Capacity: entity.NodeCapacity{
 			CPU:    cpuCapacity,
 			Memory: memoryCapacity,

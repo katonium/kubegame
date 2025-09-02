@@ -8,20 +8,20 @@ import (
 	"github.com/katonium/kubegame/backend/adapter/kubernetes"
 )
 
-// fakeClusterManager manages multiple fake Kubernetes clusters
-type fakeClusterManager struct {
-	clusters map[string]kubernetes.Client
+// clusterManager is a simple in-memory implementation of ClusterManager
+type clusterManager struct {
+	clusters map[string]kubernetes.Cluster
 	mutex    sync.RWMutex
 }
 
-// NewFakeClusterManager creates a new fake cluster manager
-func NewFakeClusterManager() kubernetes.ClusterManager {
-	return &fakeClusterManager{
-		clusters: make(map[string]kubernetes.Client),
+// NewClusterManager creates a new fake cluster manager
+func NewClusterManager() kubernetes.ClusterManager {
+	return &clusterManager{
+		clusters: make(map[string]kubernetes.Cluster),
 	}
 }
 
-func (m *fakeClusterManager) CreateCluster(ctx context.Context, ID string) (kubernetes.Client, error) {
+func (m *clusterManager) CreateCluster(ctx context.Context, ID string) (kubernetes.Cluster, error) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -29,12 +29,12 @@ func (m *fakeClusterManager) CreateCluster(ctx context.Context, ID string) (kube
 		return nil, fmt.Errorf("cluster %s already exists", ID)
 	}
 
-	client := NewFakeClient(ID)
+	client := NewFakeClient()
 	m.clusters[ID] = client
 	return client, nil
 }
 
-func (m *fakeClusterManager) GetCluster(ctx context.Context, ID string) (kubernetes.Client, error) {
+func (m *clusterManager) GetCluster(ctx context.Context, ID string) (kubernetes.Cluster, error) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
@@ -46,19 +46,24 @@ func (m *fakeClusterManager) GetCluster(ctx context.Context, ID string) (kuberne
 	return client, nil
 }
 
-func (m *fakeClusterManager) DeleteCluster(ctx context.Context, ID string) error {
+func (m *clusterManager) DeleteCluster(ctx context.Context, ID string) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	if _, exists := m.clusters[ID]; !exists {
+	cluster, exists := m.clusters[ID]
+	if !exists {
 		return fmt.Errorf("cluster %s not found", ID)
+	}
+
+	if err := cluster.Close(ctx); err != nil {
+		return fmt.Errorf("failed to close cluster %s: %w", ID, err)
 	}
 
 	delete(m.clusters, ID)
 	return nil
 }
 
-func (m *fakeClusterManager) ListClusters(ctx context.Context) (clusterIDs []string, err error) {
+func (m *clusterManager) ListClusters(ctx context.Context) (clusterIDs []string, err error) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 

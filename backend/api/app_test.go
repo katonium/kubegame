@@ -37,7 +37,7 @@ type IntegrationTestSuite struct {
 	podRepo           repository.PodRepository
 	nodeRepo          repository.NodeRepository
 	sessionRepo       repository.GameSessionRepository
-	gameUseCase       *usecase.GameUseCase
+	GameInteractor    *usecase.GameInteractor
 	gameEngineUseCase *usecase.GameEngineUseCase
 }
 
@@ -93,8 +93,8 @@ func SetupIntegrationTest(t *testing.T) *IntegrationTestSuite {
 			fx.Annotate(
 				func(gameSessionService service.GameSessionService,
 					gameEngine *usecase.GameEngineUseCase,
-					gameUseCase *usecase.GameUseCase) service.WebSocketService {
-					return infraWebSocket.NewWebSocketService(gameSessionService, gameEngine, gameUseCase)
+					GameInteractor *usecase.GameInteractor) service.WebSocketService {
+					return infraWebSocket.NewWebSocketService(gameSessionService, gameEngine, GameInteractor)
 				},
 				fx.As(new(service.WebSocketService)),
 			),
@@ -116,9 +116,9 @@ func SetupIntegrationTest(t *testing.T) *IntegrationTestSuite {
 				sessionRepo repository.GameSessionRepository,
 				k8sService service.KubernetesService,
 				schedulerSvc service.SchedulerService,
-				gameEngine *usecase.GameEngineUseCase) *usecase.GameUseCase {
-				// Create GameUseCase without WebSocketService initially  
-				return usecase.NewGameUseCase(gameRepo, podRepo, nodeRepo, sessionRepo, k8sService, schedulerSvc, nil, gameEngine)
+				gameEngine *usecase.GameEngineUseCase) *usecase.GameInteractor {
+				// Create GameInteractor without WebSocketService initially
+				return usecase.NewGameInteractor(gameRepo, podRepo, nodeRepo, sessionRepo, k8sService, schedulerSvc, nil, gameEngine)
 			},
 		),
 
@@ -130,7 +130,7 @@ func SetupIntegrationTest(t *testing.T) *IntegrationTestSuite {
 			&suite.podRepo,
 			&suite.nodeRepo,
 			&suite.sessionRepo,
-			&suite.gameUseCase,
+			&suite.GameInteractor,
 			&suite.gameEngineUseCase,
 		),
 	)
@@ -158,7 +158,7 @@ func SetupIntegrationTest(t *testing.T) *IntegrationTestSuite {
 // connectWebSocket creates a WebSocket connection for testing
 func (suite *IntegrationTestSuite) connectWebSocket(t *testing.T) (*websocket.Conn, error) {
 	wsURL := "ws" + strings.TrimPrefix(suite.server.URL, "http")
-	
+
 	dialer := websocket.Dialer{}
 	conn, _, err := dialer.Dial(wsURL, nil)
 	if err != nil {
@@ -184,13 +184,13 @@ func sendMessage(conn *websocket.Conn, msgType string, data interface{}) error {
 // receiveMessage receives and parses a WebSocket message
 func receiveMessage(conn *websocket.Conn, timeout time.Duration) (*entity.GameEvent, error) {
 	conn.SetReadDeadline(time.Now().Add(timeout))
-	
+
 	var event entity.GameEvent
 	err := conn.ReadJSON(&event)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &event, nil
 }
 
@@ -496,21 +496,21 @@ func TestPodScheduling(t *testing.T) {
 	// Check if scheduling was successful or failed
 	if event.Type == "pod_scheduled" {
 		t.Logf("Pod scheduling successful in player namespace")
-		
+
 		// Verify pod was updated
 		updatedPod, err := suite.podRepo.GetPod(context.Background(), playerNamespacePod.ID)
 		if err != nil {
 			t.Fatalf("Failed to get updated pod: %v", err)
 		}
-		
+
 		if updatedPod.Owner != entity.PodOwnerPlayer {
 			t.Errorf("Expected pod owner to be player, got %v", updatedPod.Owner)
 		}
-		
+
 		if updatedPod.NodeID == nil || *updatedPod.NodeID != playerNode.ID {
 			t.Errorf("Expected pod to be scheduled to node %s", playerNode.ID)
 		}
-		
+
 	} else if event.Type == "error" {
 		t.Logf("Pod scheduling failed (may be expected in some cases): %v", event.Data)
 	} else {
@@ -610,7 +610,7 @@ func TestMultipleClients(t *testing.T) {
 	clusterIDs := make(map[string]bool)
 	playerNamespaces := make(map[string]bool)
 	schedulerNamespaces := make(map[string]bool)
-	
+
 	for _, session := range sessions {
 		clusterIDs[session.ClusterID] = true
 		playerNamespaces[session.PlayerNamespace] = true

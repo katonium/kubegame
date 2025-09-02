@@ -10,7 +10,7 @@ import (
 
 func TestFakeClusterManager(t *testing.T) {
 	ctx := context.Background()
-	manager := NewFakeClusterManager()
+	manager := NewClusterManager()
 
 	t.Run("CreateCluster", func(t *testing.T) {
 		client, err := manager.CreateCluster(ctx, "cluster-1")
@@ -138,7 +138,7 @@ func TestFakeClusterManager(t *testing.T) {
 
 func TestFakeClusterManager_ClusterIsolation(t *testing.T) {
 	ctx := context.Background()
-	manager := NewFakeClusterManager()
+	manager := NewClusterManager()
 
 	// Create two clusters
 	client1, err := manager.CreateCluster(ctx, "cluster-1")

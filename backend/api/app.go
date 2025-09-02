@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
-	"net/http"
 	"fmt"
+	"net/http"
 	"os"
+
+	adapterk8s "github.com/katonium/kubegame/backend/adapter/kubernetes"
 
 	"github.com/katonium/kubegame/backend/domain/repository"
 	"github.com/katonium/kubegame/backend/domain/service"
@@ -34,17 +36,23 @@ func main() {
 				fx.As(new(repository.GameRepository)),
 			),
 			fx.Annotate(
-				infraRepo.NewMemoryPodRepository,
-				fx.As(new(repository.PodRepository)),
-			),
-			fx.Annotate(
-				infraRepo.NewMemoryNodeRepository,
-				fx.As(new(repository.NodeRepository)),
-			),
-			fx.Annotate(
 				infraRepo.NewMemorySessionRepository,
 				fx.As(new(repository.GameSessionRepository)),
 			),
+		),
+
+		// Provide Kubernetes cluster manager
+		fx.Provide(
+			func() adapterk8s.ClusterManager {
+				return kubernetes.NewClusterManager()
+			},
+		),
+
+		// Provide message handler
+		fx.Provide(
+			func(gi *usecase.GameInteractor) websocket.MessageHandler {
+				return websocket.NewMessageHandler(gi)
+			},
 		),
 
 		// Provide services
@@ -71,10 +79,8 @@ func main() {
 				fx.As(new(service.GameSessionService)),
 			),
 			fx.Annotate(
-				func(gameSessionService service.GameSessionService,
-					gameEngine *usecase.GameEngineUseCase,
-					gameUseCase *usecase.GameUseCase) service.WebSocketService {
-					return websocket.NewWebSocketService(gameSessionService, gameEngine, gameUseCase)
+				func(handler websocket.MessageHandler) service.WebSocketService {
+					return websocket.NewWebSocketService(handler)
 				},
 				fx.As(new(service.WebSocketService)),
 			),
@@ -82,21 +88,14 @@ func main() {
 
 		// Provide use cases
 		fx.Provide(
-			func(gameRepo repository.GameRepository,
-				podRepo repository.PodRepository,
-				nodeRepo repository.NodeRepository,
-				sessionRepo repository.GameSessionRepository,
-				k8sService service.KubernetesService) *usecase.GameEngineUseCase {
-				return usecase.NewGameEngineUseCase(gameRepo, podRepo, nodeRepo, sessionRepo, nil, k8sService)
+			func(
+				k8sManager adapterk8s.ClusterManager,
+				gameRepo repository.GameRepository) *usecase.GameEngineUseCase {
+				return usecase.NewGameEngineUseCase(
+					k8sManager, gameRepo)
 			},
-			func(gameRepo repository.GameRepository,
-				podRepo repository.PodRepository,
-				nodeRepo repository.NodeRepository,
-				sessionRepo repository.GameSessionRepository,
-				k8sService service.KubernetesService,
-				schedulerSvc service.SchedulerService,
-				gameEngine *usecase.GameEngineUseCase) *usecase.GameUseCase {
-				return usecase.NewGameUseCase(gameRepo, podRepo, nodeRepo, sessionRepo, k8sService, schedulerSvc, nil, gameEngine)
+			func(gameEngine *usecase.GameEngineUseCase) *usecase.GameInteractor {
+				return usecase.NewGameInteractor(gameEngine)
 			},
 		),
 
@@ -135,7 +134,7 @@ func main() {
 			})
 		}),
 	)
-	
+
 	// Run the application and block until shutdown
 	app.Run()
 }

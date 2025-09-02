@@ -11,20 +11,16 @@ import (
 
 type memoryGameRepository struct {
 	games map[string]*entity.Game
-	pods  map[string]*entity.Pod
-	nodes map[string]*entity.Node
 	mu    sync.RWMutex
 }
 
 func NewMemoryGameRepository() repository.GameRepository {
 	return &memoryGameRepository{
 		games: make(map[string]*entity.Game),
-		pods:  make(map[string]*entity.Pod),
-		nodes: make(map[string]*entity.Node),
 	}
 }
 
-func (r *memoryGameRepository) CreateGame(ctx context.Context, game *entity.Game) error {
+func (r *memoryGameRepository) Put(ctx context.Context, game *entity.Game) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -36,7 +32,7 @@ func (r *memoryGameRepository) CreateGame(ctx context.Context, game *entity.Game
 	return nil
 }
 
-func (r *memoryGameRepository) GetGame(ctx context.Context, gameID string) (*entity.Game, error) {
+func (r *memoryGameRepository) Get(ctx context.Context, gameID string) (*entity.Game, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -48,7 +44,7 @@ func (r *memoryGameRepository) GetGame(ctx context.Context, gameID string) (*ent
 	return game, nil
 }
 
-func (r *memoryGameRepository) UpdateGame(ctx context.Context, game *entity.Game) error {
+func (r *memoryGameRepository) Update(ctx context.Context, game *entity.Game) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -60,7 +56,7 @@ func (r *memoryGameRepository) UpdateGame(ctx context.Context, game *entity.Game
 	return nil
 }
 
-func (r *memoryGameRepository) DeleteGame(ctx context.Context, gameID string) error {
+func (r *memoryGameRepository) Delete(ctx context.Context, gameID string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

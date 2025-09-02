@@ -14,20 +14,12 @@ import (
 )
 
 type gameSessionService struct {
-	sessionRepo   repository.GameSessionRepository
-	gameRepo      repository.GameRepository
-	podRepo       repository.PodRepository
-	nodeRepo      repository.NodeRepository
+	sessionRepo       repository.GameSessionRepository
+	gameRepo          repository.GameRepository
+	podRepo           repository.PodRepository
+	nodeRepo          repository.NodeRepository
 	kubernetesService service.KubernetesService
-	schedulerService  service.SchedulerService
-	gameUseCase       GameUseCase
 	gameEngineUseCase GameEngineUseCase
-}
-
-// Interfaces for use cases to avoid circular dependency
-type GameUseCase interface {
-	StartGame(ctx context.Context, gameID string) error
-	StopGame(ctx context.Context, gameID string) error
 }
 
 type GameEngineUseCase interface {
@@ -44,9 +36,9 @@ func NewGameSessionService(
 ) service.GameSessionService {
 	return &gameSessionService{
 		sessionRepo:       sessionRepo,
-		gameRepo:         gameRepo,
-		podRepo:          podRepo,
-		nodeRepo:         nodeRepo,
+		gameRepo:          gameRepo,
+		podRepo:           podRepo,
+		nodeRepo:          nodeRepo,
 		kubernetesService: kubernetesService,
 	}
 }
@@ -77,7 +69,7 @@ func (s *gameSessionService) CreateSession(ctx context.Context, connectionID str
 		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 
-	logger.Info(ctx, "Created session %s for connection %s with cluster %s (namespaces: %s, %s)", 
+	logger.Info(ctx, "Created session %s for connection %s with cluster %s (namespaces: %s, %s)",
 		session.SessionID, connectionID, session.ClusterID, session.PlayerNamespace, session.SchedulerNamespace)
 	return session, nil
 }
@@ -139,7 +131,7 @@ func (s *gameSessionService) CreateCluster(ctx context.Context, connectionID str
 
 	// Create fake Kubernetes client for this session
 	// In a real implementation, you might create namespace isolation
-	
+
 	// Create initial nodes for the cluster - 4 player nodes + 1 k8s scheduler node
 	playerNodes := []*entity.Node{
 		{
@@ -149,16 +141,16 @@ func (s *gameSessionService) CreateCluster(ctx context.Context, connectionID str
 				CPU:    4,
 				Memory: 8,
 			},
-			NodeType: "player",
+			// NodeType: "player",
 		},
 		{
 			ID:   fmt.Sprintf("player-node-2-%s", session.ClusterID),
-			Name: "worker-02", 
+			Name: "worker-02",
 			Capacity: entity.NodeCapacity{
 				CPU:    6,
 				Memory: 12,
 			},
-			NodeType: "player",
+			// NodeType: "player",
 		},
 		{
 			ID:   fmt.Sprintf("player-node-3-%s", session.ClusterID),
@@ -167,7 +159,7 @@ func (s *gameSessionService) CreateCluster(ctx context.Context, connectionID str
 				CPU:    2,
 				Memory: 4,
 			},
-			NodeType: "player",
+			// NodeType: "player",
 		},
 		{
 			ID:   fmt.Sprintf("player-node-4-%s", session.ClusterID),
@@ -176,7 +168,7 @@ func (s *gameSessionService) CreateCluster(ctx context.Context, connectionID str
 				CPU:    8,
 				Memory: 16,
 			},
-			NodeType: "player",
+			// NodeType: "player",
 		},
 	}
 
@@ -188,7 +180,7 @@ func (s *gameSessionService) CreateCluster(ctx context.Context, connectionID str
 				CPU:    12,
 				Memory: 24,
 			},
-			NodeType: "cpu",
+			// NodeType: "cpu",
 		},
 	}
 
@@ -204,7 +196,7 @@ func (s *gameSessionService) CreateCluster(ctx context.Context, connectionID str
 	// Update session state
 	session.State = entity.SessionStateClusterReady
 	session.UpdatedAt = time.Now()
-	
+
 	return s.sessionRepo.UpdateSession(ctx, session)
 }
 
@@ -246,7 +238,7 @@ func (s *gameSessionService) DeleteCluster(ctx context.Context, connectionID str
 		}
 	}
 
-	logger.Info(ctx, "Deleted cluster %s with namespaces %s and %s for connection %s", 
+	logger.Info(ctx, "Deleted cluster %s with namespaces %s and %s for connection %s",
 		session.ClusterID, session.PlayerNamespace, session.SchedulerNamespace, connectionID)
 	return nil
 }
@@ -277,7 +269,7 @@ func (s *gameSessionService) StartGame(ctx context.Context, connectionID string)
 		UpdatedAt:   time.Now(),
 	}
 
-	if err := s.gameRepo.CreateGame(ctx, game); err != nil {
+	if err := s.gameRepo.Put(ctx, game); err != nil {
 		return fmt.Errorf("failed to create game: %w", err)
 	}
 
@@ -324,12 +316,12 @@ func (s *gameSessionService) StopGame(ctx context.Context, connectionID string) 
 	}
 
 	// Update game state
-	game, err := s.gameRepo.GetGame(ctx, gameID)
+	game, err := s.gameRepo.Get(ctx, gameID)
 	if err == nil {
 		game.State = entity.GameStateGameOver
 		game.TimeLeft = 0
 		game.UpdatedAt = time.Now()
-		s.gameRepo.UpdateGame(ctx, game)
+		s.gameRepo.Update(ctx, game)
 	}
 
 	// Update session
@@ -381,14 +373,14 @@ func (s *gameSessionService) createInitialPods(ctx context.Context, gameID strin
 	if err != nil {
 		return fmt.Errorf("failed to get sessions: %w", err)
 	}
-	
+
 	for _, s := range allSessions {
 		if s.SessionID == sessionID {
 			session = s
 			break
 		}
 	}
-	
+
 	if session == nil {
 		return fmt.Errorf("session not found for game %s", gameID)
 	}
@@ -448,11 +440,11 @@ func (s *gameSessionService) createInitialPods(ctx context.Context, gameID strin
 			return fmt.Errorf("failed to create scheduler pod %s: %w", schedulerPod.ID, err)
 		}
 
-		logger.Debug(ctx, "Created pod pair %s (%s) with %d CPU, %d GB memory in both namespaces", 
+		logger.Debug(ctx, "Created pod pair %s (%s) with %d CPU, %d GB memory in both namespaces",
 			podSpec.name, podSpec.label, podSpec.requirements.CPU, podSpec.requirements.Memory)
 	}
 
-	logger.Info(ctx, "Created 8 pod pairs (16 total pods) for game %s in namespaces %s and %s", 
+	logger.Info(ctx, "Created 8 pod pairs (16 total pods) for game %s in namespaces %s and %s",
 		gameID, session.PlayerNamespace, session.SchedulerNamespace)
 	return nil
 }

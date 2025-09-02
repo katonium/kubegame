@@ -43,7 +43,6 @@ type Pod struct {
 	Requirements ResourceRequirements `json:"requirements"`
 	Status       PodStatus            `json:"status"`
 	NodeID       *string              `json:"nodeId"`
-	Owner        PodOwner             `json:"owner"`
 	Namespace    string               `json:"namespace"` // Namespace where the pod is created
 	CreatedAt    time.Time            `json:"createdAt"`
 }
@@ -54,10 +53,11 @@ type NodeCapacity struct {
 }
 
 type Node struct {
-	ID       string       `json:"id"`
-	Name     string       `json:"name"`
-	Capacity NodeCapacity `json:"capacity"`
-	NodeType string       `json:"nodeType"` // "player" or "cpu"
+	ID        string       `json:"id"`
+	Name      string       `json:"name"`
+	Capacity  NodeCapacity `json:"capacity"`
+	Used      NodeCapacity `json:"used"`
+	Namespace string       `json:"namespace"` // Namespace where the node is created
 }
 
 type GameState string
@@ -95,14 +95,14 @@ const (
 
 // GameSession represents a user's game session tied to their WebSocket connection
 type GameSession struct {
-	ConnectionID      string       `json:"connectionId"`
-	SessionID         string       `json:"sessionId"`
-	State             SessionState `json:"state"`
-	ClusterID         string       `json:"clusterId"`         // Unique cluster identifier for this session
-	PlayerNamespace   string       `json:"playerNamespace"`   // Namespace for player pods
-	SchedulerNamespace string      `json:"schedulerNamespace"` // Namespace for k8s scheduler pods
-	GameID            *string      `json:"gameId"`            // Current game ID if playing
-	CreatedAt         time.Time    `json:"createdAt"`
-	UpdatedAt         time.Time    `json:"updatedAt"`
-	LastActivity      time.Time    `json:"lastActivity"`
+	ConnectionID       string       `json:"connectionId"`
+	SessionID          string       `json:"sessionId"`
+	State              SessionState `json:"state"`
+	ClusterID          string       `json:"clusterId"`          // Unique cluster identifier for this session
+	PlayerNamespace    string       `json:"playerNamespace"`    // Namespace for player pods
+	SchedulerNamespace string       `json:"schedulerNamespace"` // Namespace for k8s scheduler pods
+	GameID             *string      `json:"gameId"`             // Current game ID if playing
+	CreatedAt          time.Time    `json:"createdAt"`
+	UpdatedAt          time.Time    `json:"updatedAt"`
+	LastActivity       time.Time    `json:"lastActivity"`
 }

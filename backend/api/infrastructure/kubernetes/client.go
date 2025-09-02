@@ -6,6 +6,7 @@ import (
 
 	adapter "github.com/katonium/kubegame/backend/adapter/kubernetes"
 	"github.com/katonium/kubegame/backend/domain/entity"
+	"github.com/katonium/kubegame/backend/util/logger"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,16 +17,30 @@ import (
 // fakeClient is a thin wrapper around Kubernetes fake client
 // that implements the Client interface using actual Kubernetes API objects
 type fakeClient struct {
-	clusterID string
-	client    kubernetes.Interface
+	client kubernetes.Interface
 }
 
 // NewFakeClient creates a new fake Kubernetes client using k8s fake clientset
-func NewFakeClient(clusterID string) adapter.Client {
+func NewFakeClient() adapter.Cluster {
 	return &fakeClient{
-		clusterID: clusterID,
-		client:    fake.NewSimpleClientset(),
+		client: fake.NewSimpleClientset(),
 	}
+}
+
+// CreateNamespace creates a new namespace in the cluster.
+func (f *fakeClient) CreateNamespace(ctx context.Context, namespace string) error {
+	_, err := f.client.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+			Labels: map[string]string{
+				"kubegame.io/namespace": namespace,
+			},
+		},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to create namespace in Kubernetes: %w", err)
+	}
+	return nil
 }
 
 // Node operations
@@ -35,7 +50,6 @@ func (f *fakeClient) CreateNode(ctx context.Context, namespace string, node *ent
 		ObjectMeta: metav1.ObjectMeta{
 			Name: node.ID,
 			Labels: map[string]string{
-				"node-type":              node.NodeType,
 				"kubegame.io/node-id":    node.ID,
 				"kubegame.io/node-name":  node.Name,
 				"kubegame.io/namespace":  namespace,
@@ -68,10 +82,10 @@ func (f *fakeClient) CreateNode(ctx context.Context, namespace string, node *ent
 	return nil
 }
 
-func (f *fakeClient) GetNodes(ctx context.Context, namespace *string) ([]*entity.Node, error) {
+func (f *fakeClient) GetNodes(ctx context.Context, namespace string) ([]*entity.Node, error) {
 	var labelSelector string
-	if namespace != nil {
-		labelSelector = "kubegame.io/namespace=" + *namespace
+	if namespace != "" {
+		labelSelector = "kubegame.io/namespace=" + namespace
 	}
 
 	nodeList, err := f.client.CoreV1().Nodes().List(ctx, metav1.ListOptions{
@@ -110,7 +124,6 @@ func (f *fakeClient) CreatePod(ctx context.Context, namespace string, pod *entit
 				"kubegame.io/pod-id":    pod.ID,
 				"kubegame.io/pod-name":  pod.Name,
 				"kubegame.io/pod-label": string(pod.Label),
-				"kubegame.io/owner":     string(pod.Owner),
 			},
 		},
 		Spec: corev1.PodSpec{
@@ -230,24 +243,31 @@ func (f *fakeClient) convertK8sNodeToEntity(k8sNode *corev1.Node) *entity.Node {
 	cpuCapacity := int(k8sNode.Status.Capacity.Cpu().Value())
 	memoryCapacity := int(k8sNode.Status.Capacity.Memory().Value() / (1024 * 1024 * 1024))
 
-	nodeType := "cpu" // default
-	if nodeTypeLabel, exists := k8sNode.Labels["node-type"]; exists {
-		nodeType = nodeTypeLabel
-	}
-
 	nodeName := k8sNode.Name
 	if nameLabel, exists := k8sNode.Labels["kubegame.io/node-name"]; exists {
 		nodeName = nameLabel
 	}
 
+	namespace := ""
+	if nsLabel, exists := k8sNode.Labels["kubegame.io/namespace"]; exists {
+		namespace = nsLabel
+	} else {
+		logger.Error(context.Background(), "Node %s does not have namespace label", k8sNode.Name)
+	}
+
 	return &entity.Node{
-		ID:       k8sNode.Name,
-		Name:     nodeName,
-		NodeType: nodeType,
+		ID:   k8sNode.Name,
+		Name: nodeName,
 		Capacity: entity.NodeCapacity{
 			CPU:    cpuCapacity,
 			Memory: memoryCapacity,
 		},
+		Used: entity.NodeCapacity{
+			// TODO
+			CPU:    0,
+			Memory: 0,
+		},
+		Namespace: namespace,
 	}
 }
 
@@ -297,6 +317,14 @@ func (f *fakeClient) convertK8sPodToEntity(k8sPod *corev1.Pod) *entity.Pod {
 		nodeID = &k8sPod.Spec.NodeName
 	}
 
+	// Extract namespace from labels if exists
+	var namespace string
+	if nsLabel, exists := k8sPod.Labels["kubegame.io/namespace"]; exists {
+		namespace = nsLabel
+	} else {
+		logger.Error(context.Background(), "Pod %s does not have namespace label", k8sPod.Name)
+	}
+
 	return &entity.Pod{
 		ID:     k8sPod.Name,
 		Name:   podName,
@@ -308,6 +336,12 @@ func (f *fakeClient) convertK8sPodToEntity(k8sPod *corev1.Pod) *entity.Pod {
 			CPU:    cpuReq,
 			Memory: memoryReq,
 		},
+		Namespace: namespace,
 		CreatedAt: k8sPod.CreationTimestamp.Time,
 	}
+}
+
+// Close closes the client and releases any resources.
+func (f *fakeClient) Close(ctx context.Context) error {
+	return nil
 }
