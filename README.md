@@ -55,6 +55,38 @@ npm run dev
 
 The frontend will start on port 3000.
 
+### Testing
+
+The project includes comprehensive API and scenario tests using Playwright for the WebSocket server.
+
+1. Install test dependencies:
+```bash
+pnpm install
+```
+
+2. Configure test environment:
+```bash
+cp tests/.env.template tests/.env
+# Edit tests/.env with your configuration
+```
+
+3. Run tests:
+```bash
+# All tests
+pnpm test
+
+# API tests only
+pnpm test:api
+
+# Scenario tests only
+pnpm test:scenario
+
+# With UI
+pnpm test:ui
+```
+
+For detailed testing guidelines, see [Integration Tests Skill](./.claude/skills/integration-tests/SKILL.md).
+
 ### Playing the Game
 
 1. Start both backend and frontend servers
@@ -104,5 +136,9 @@ kubegame/
 │       ├── hooks/         # Custom React hooks
 │       ├── lib/          # WebSocket service
 │       └── types/        # TypeScript types
-└── kubernetes/           # Kubernetes source code for scheduler
+├── tests/               # Integration tests
+│   ├── api/            # API contract tests
+│   ├── scenario/       # Workflow tests
+│   └── fixtures/       # Test fixtures
+└── kubernetes/         # Kubernetes source code for scheduler
 ```

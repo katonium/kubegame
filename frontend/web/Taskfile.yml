@@ -13,11 +13,11 @@ tasks:
 
   setup:
     cmds:
-      - npm ci
+      - echo "Execute pnpm install in root directory instead"
 
   dev:
     cmds:
       - task: run
   run:
     cmds:
-      - npm run dev
+      - pnpm run dev

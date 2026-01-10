@@ -52,6 +52,11 @@ node_modules/
 # testing
 /coverage
 
+# playwright
+test-results/
+playwright-report/
+/tests/.cache/
+
 # next.js
 .next/
 out/
@@ -78,6 +83,7 @@ next-env.d.ts
 
 .genkit/*
 .env*
+!.env.template
 
 # firebase
 firebase-debug.log

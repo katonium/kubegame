@@ -26,11 +26,9 @@ tasks:
   # ===========================================
   dev:
     desc: Run both backend and frontend in development mode
-    cmds:
+    deps:
       - task: api:run
-        async: true
       - task: web:dev
-    parallel: true
 
   # ===========================================
   # OpenAPI Tasks
@@ -53,3 +51,43 @@ tasks:
       - echo "OpenAPI documentation available at http://localhost:18080/openapi.html"
       - echo "Press Ctrl+C to stop the server"
       - python3 -m http.server 18080 --directory docs/generated-openapi
+
+
+  # ===========================================
+  # Test Tasks
+  # ===========================================
+  test:setup:
+    desc: Setup test environment
+    cmds:
+      - pnpm test:setup
+
+  test:
+    desc: Run all Playwright tests
+    cmds:
+      - pnpm test
+
+  test:api:
+    desc: Run API contract tests only
+    cmds:
+      - pnpm test:api
+
+  test:scenario:
+    desc: Run scenario workflow tests only
+    cmds:
+      - pnpm test:scenario
+
+  test:e2e:
+    desc: Run end-to-end UI tests
+    cmds:
+      - pnpm test:e2e
+
+  test:ui:
+    desc: Run tests with Playwright UI mode
+    cmds:
+      - pnpm test:ui
+
+  test:report:
+    desc: Show Playwright test report
+    cmds:
+      - pnpm test:report
+
