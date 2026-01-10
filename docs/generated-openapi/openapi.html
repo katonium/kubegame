@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf8" />
+  <title>KubeGame WebSocket API</title>
+  <!-- needed for adaptive design -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+  <script src="https://cdn.redocly.com/redoc/v2.5.0/bundles/redoc.standalone.js"></script><style data-styled="true" data-styled-version="6.3.0">.jZFlEf{width:calc(100% - 40%);padding:0 40px;}/*!sc*/
+@media print,screen and (max-width: 75rem){.jZFlEf{width:100%;padding:40px 40px;}}/*!sc*/
+.kzThor{width:calc(100% - 40%);padding:0 40px;}/*!sc*/
+@media print,screen and (max-width: 75rem){.kzThor{width:100%;padding:0px 40px;}}/*!sc*/
+data-styled.g4[id="sc-hKFxyK"]{content:"jZFlEf,kzThor,"}/*!sc*/
+.jEUqHO{padding:40px 0;}/*!sc*/
+.jEUqHO:last-child{min-height:calc(100vh + 1px);}/*!sc*/
+.jEUqHO>.jEUqHO:last-child{min-height:initial;}/*!sc*/
+@media print,screen and (max-width: 75rem){.jEUqHO{padding:0;}}/*!sc*/
+.ldtQnB{padding:40px 0;position:relative;}/*!sc*/
+.ldtQnB:last-child{min-height:calc(100vh + 1px);}/*!sc*/
+.ldtQnB>.ldtQnB:last-child{min-height:initial;}/*!sc*/
+@media print,screen and (max-width: 75rem){.ldtQnB{padding:0;}}/*!sc*/
+.ldtQnB:not(:last-of-type):after{position:absolute;bottom:0;width:100%;display:block;content:'';border-bottom:1px solid rgba(0, 0, 0, 0.2);}/*!sc*/
+data-styled.g5[id="sc-eCApnb"]{content:"jEUqHO,ldtQnB,"}/*!sc*/
+.fRgQVh{width:40%;color:#ffffff;background-color:#263238;padding:0 40px;}/*!sc*/
+@media print,screen and (max-width: 75rem){.fRgQVh{width:100%;padding:40px 40px;}}/*!sc*/
+data-styled.g6[id="sc-jSFjdk"]{content:"fRgQVh,"}/*!sc*/
+.bSSPmY{background-color:#263238;}/*!sc*/
+data-styled.g7[id="sc-gKAaRB"]{content:"bSSPmY,"}/*!sc*/
+.dDvnQS{display:flex;width:100%;padding:0;}/*!sc*/
+@media print,screen and (max-width: 75rem){.dDvnQS{flex-direction:column;}}/*!sc*/
+data-styled.g8[id="sc-iCoGMa"]{content:"dDvnQS,"}/*!sc*/
+.kGsWGp{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.85714em;line-height:1.6em;color:#333333;}/*!sc*/
+data-styled.g9[id="sc-fujyAr"]{content:"kGsWGp,"}/*!sc*/
+.ifgvjf{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.57143em;line-height:1.6em;color:#333333;margin:0 0 20px;}/*!sc*/
+data-styled.g10[id="sc-pNWdL"]{content:"ifgvjf,"}/*!sc*/
+.daOkMJ{color:#ffffff;}/*!sc*/
+data-styled.g12[id="sc-kEqXSd"]{content:"daOkMJ,"}/*!sc*/
+.ecAusu{border-bottom:1px solid rgba(38, 50, 56, 0.3);margin:1em 0 1em 0;color:rgba(38, 50, 56, 0.5);font-weight:normal;text-transform:uppercase;font-size:0.929em;line-height:20px;}/*!sc*/
+data-styled.g13[id="sc-iqAclM"]{content:"ecAusu,"}/*!sc*/
+.jEsELy{cursor:pointer;margin-left:-20px;padding:0;line-height:1;width:20px;display:inline-block;outline:0;}/*!sc*/
+.jEsELy:before{content:'';width:15px;height:15px;background-size:contain;background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgeD0iMCIgeT0iMCIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA1MTIgNTEyIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cGF0aCBmaWxsPSIjMDEwMTAxIiBkPSJNNDU5LjcgMjMzLjRsLTkwLjUgOTAuNWMtNTAgNTAtMTMxIDUwLTE4MSAwIC03LjktNy44LTE0LTE2LjctMTkuNC0yNS44bDQyLjEtNDIuMWMyLTIgNC41LTMuMiA2LjgtNC41IDIuOSA5LjkgOCAxOS4zIDE1LjggMjcuMiAyNSAyNSA2NS42IDI0LjkgOTAuNSAwbDkwLjUtOTAuNWMyNS0yNSAyNS02NS42IDAtOTAuNSAtMjQuOS0yNS02NS41LTI1LTkwLjUgMGwtMzIuMiAzMi4yYy0yNi4xLTEwLjItNTQuMi0xMi45LTgxLjYtOC45bDY4LjYtNjguNmM1MC01MCAxMzEtNTAgMTgxIDBDNTA5LjYgMTAyLjMgNTA5LjYgMTgzLjQgNDU5LjcgMjMzLjR6TTIyMC4zIDM4Mi4ybC0zMi4yIDMyLjJjLTI1IDI0LjktNjUuNiAyNC45LTkwLjUgMCAtMjUtMjUtMjUtNjUuNiAwLTkwLjVsOTAuNS05MC41YzI1LTI1IDY1LjUtMjUgOTAuNSAwIDcuOCA3LjggMTIuOSAxNy4yIDE1LjggMjcuMSAyLjQtMS40IDQuOC0yLjUgNi44LTQuNWw0Mi4xLTQyYy01LjQtOS4yLTExLjYtMTgtMTkuNC0yNS44IC01MC01MC0xMzEtNTAtMTgxIDBsLTkwLjUgOTAuNWMtNTAgNTAtNTAgMTMxIDAgMTgxIDUwIDUwIDEzMSA1MCAxODEgMGw2OC42LTY4LjZDMjc0LjYgMzk1LjEgMjQ2LjQgMzkyLjMgMjIwLjMgMzgyLjJ6Ii8+PC9zdmc+Cg==');opacity:0.5;visibility:hidden;display:inline-block;vertical-align:middle;}/*!sc*/
+h1:hover>.jEsELy::before,h2:hover>.jEsELy::before,.jEsELy:hover::before{visibility:visible;}/*!sc*/
+data-styled.g14[id="sc-crzoA-D"]{content:"jEsELy,"}/*!sc*/
+.cohdys{height:1.5em;width:1.5em;min-width:1.5em;vertical-align:middle;float:left;transition:transform 0.2s ease-out;transform:rotateZ(-90deg);}/*!sc*/
+.cohdys polygon{fill:#1d8127;}/*!sc*/
+.kxMCrk{height:20px;width:20px;min-width:20px;vertical-align:middle;float:right;transition:transform 0.2s ease-out;transform:rotateZ(0);}/*!sc*/
+.kxMCrk polygon{fill:white;}/*!sc*/
+data-styled.g15[id="sc-dIsUm"]{content:"cohdys,kxMCrk,"}/*!sc*/
+.dWpYAJ{border-left:1px solid #7c7cbb;box-sizing:border-box;position:relative;padding:10px 10px 10px 0;}/*!sc*/
+@media screen and (max-width: 50rem){.dWpYAJ{display:block;overflow:hidden;}}/*!sc*/
+tr:first-of-type>.dWpYAJ,tr.last>.dWpYAJ{border-left-width:0;background-position:top left;background-repeat:no-repeat;background-size:1px 100%;}/*!sc*/
+tr:first-of-type>.dWpYAJ{background-image:linear-gradient(
+      to bottom,
+      transparent 0%,
+      transparent 22px,
+      #7c7cbb 22px,
+      #7c7cbb 100%
+    );}/*!sc*/
+tr.last>.dWpYAJ{background-image:linear-gradient(
+      to bottom,
+      #7c7cbb 0%,
+      #7c7cbb 22px,
+      transparent 22px,
+      transparent 100%
+    );}/*!sc*/
+tr.last+tr>.dWpYAJ{border-left-color:transparent;}/*!sc*/
+tr.last:first-child>.dWpYAJ{background:none;border-left-color:transparent;}/*!sc*/
+data-styled.g18[id="sc-hBMUJn"]{content:"dWpYAJ,"}/*!sc*/
+.wNtrM{vertical-align:top;line-height:20px;white-space:nowrap;font-size:13px;font-family:Courier,monospace;}/*!sc*/
+.wNtrM.deprecated{text-decoration:line-through;color:#707070;}/*!sc*/
+data-styled.g20[id="sc-fFSPTU"]{content:"wNtrM,"}/*!sc*/
+.idNhXW{border-bottom:1px solid #9fb4be;padding:10px 0;width:75%;box-sizing:border-box;}/*!sc*/
+tr.expanded .idNhXW{border-bottom:none;}/*!sc*/
+@media screen and (max-width: 50rem){.idNhXW{padding:0 20px;border-bottom:none;border-left:1px solid #7c7cbb;}tr.last>.idNhXW{border-left:none;}}/*!sc*/
+data-styled.g21[id="sc-bkbkJN"]{content:"idNhXW,"}/*!sc*/
+.jLBIcp{color:#7c7cbb;font-family:Courier,monospace;margin-right:10px;}/*!sc*/
+.jLBIcp::before{content:'';display:inline-block;vertical-align:middle;width:10px;height:1px;background:#7c7cbb;}/*!sc*/
+.jLBIcp::after{content:'';display:inline-block;vertical-align:middle;width:1px;background:#7c7cbb;height:7px;}/*!sc*/
+data-styled.g22[id="sc-iemWCW"]{content:"jLBIcp,"}/*!sc*/
+.iLdXhW{border-collapse:separate;border-radius:3px;font-size:14px;border-spacing:0;width:100%;}/*!sc*/
+.iLdXhW >tr{vertical-align:middle;}/*!sc*/
+@media screen and (max-width: 50rem){.iLdXhW{display:block;}.iLdXhW >tr,.iLdXhW >tbody>tr{display:block;}}/*!sc*/
+@media screen and (max-width: 50rem) and (-ms-high-contrast:none){.iLdXhW td{float:left;width:100%;}}/*!sc*/
+.iLdXhW .sc-dIvrsP,.iLdXhW .sc-dIvrsP .sc-dIvrsP .sc-dIvrsP,.iLdXhW .sc-dIvrsP .sc-dIvrsP .sc-dIvrsP .sc-dIvrsP .sc-dIvrsP{margin:1em;margin-right:0;background:#fafafa;}/*!sc*/
+.iLdXhW .sc-dIvrsP .sc-dIvrsP,.iLdXhW .sc-dIvrsP .sc-dIvrsP .sc-dIvrsP .sc-dIvrsP,.iLdXhW .sc-dIvrsP .sc-dIvrsP .sc-dIvrsP .sc-dIvrsP .sc-dIvrsP .sc-dIvrsP{background:#ffffff;}/*!sc*/
+data-styled.g24[id="sc-hHEiqM"]{content:"iLdXhW,"}/*!sc*/
+.feMCfH{margin:0 0 3px 0;display:inline-block;}/*!sc*/
+data-styled.g25[id="sc-dlMDgF"]{content:"feMCfH,"}/*!sc*/
+.fBkdBz{font-size:0.9em;margin-right:10px;color:#32329f;font-family:Montserrat,sans-serif;}/*!sc*/
+data-styled.g26[id="sc-kfYoZO"]{content:"fBkdBz,"}/*!sc*/
+.iZeEf{display:inline-block;margin-right:10px;margin-bottom:5px;font-size:0.8em;cursor:pointer;border:1px solid #32329f;padding:2px 10px;line-height:1.5em;outline:none;color:white;background-color:#32329f;}/*!sc*/
+.iZeEf:focus{box-shadow:0 0 0 1px #32329f;}/*!sc*/
+.iZeEf:focus{box-shadow:none;background-color:#202065;}/*!sc*/
+.kSybGX{display:inline-block;margin-right:10px;margin-bottom:5px;font-size:0.8em;cursor:pointer;border:1px solid #32329f;padding:2px 10px;line-height:1.5em;outline:none;color:#32329f;background-color:white;}/*!sc*/
+.kSybGX:focus{box-shadow:0 0 0 1px #32329f;}/*!sc*/
+data-styled.g27[id="sc-fKgJPH"]{content:"iZeEf,kSybGX,"}/*!sc*/
+.MXKEj >ul{list-style:none;padding:0;margin:0;margin:0 -5px;}/*!sc*/
+.MXKEj >ul >li{padding:5px 10px;display:inline-block;background-color:#11171a;border-bottom:1px solid rgba(0, 0, 0, 0.5);cursor:pointer;text-align:center;outline:none;color:#ccc;margin:0 5px 5px 5px;border:1px solid #07090b;border-radius:5px;min-width:60px;font-size:0.9em;font-weight:bold;}/*!sc*/
+.MXKEj >ul >li.react-tabs__tab--selected{color:#333333;background:#ffffff;}/*!sc*/
+.MXKEj >ul >li.react-tabs__tab--selected:focus{outline:auto;}/*!sc*/
+.MXKEj >ul >li:only-child{flex:none;min-width:100px;}/*!sc*/
+.MXKEj >ul >li.tab-success{color:#1d8127;}/*!sc*/
+.MXKEj >ul >li.tab-redirect{color:#ffa500;}/*!sc*/
+.MXKEj >ul >li.tab-info{color:#87ceeb;}/*!sc*/
+.MXKEj >ul >li.tab-error{color:#d41f1c;}/*!sc*/
+.MXKEj >.react-tabs__tab-panel{background:#11171a;}/*!sc*/
+.MXKEj >.react-tabs__tab-panel>div,.MXKEj >.react-tabs__tab-panel>pre{padding:20px;margin:0;}/*!sc*/
+.MXKEj >.react-tabs__tab-panel>div>pre{padding:0;}/*!sc*/
+data-styled.g30[id="sc-cxNHIl"]{content:"MXKEj,"}/*!sc*/
+.gNgulf code[class*='language-'],.gNgulf pre[class*='language-']{text-shadow:0 -0.1em 0.2em black;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.5;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none;}/*!sc*/
+@media print{.gNgulf code[class*='language-'],.gNgulf pre[class*='language-']{text-shadow:none;}}/*!sc*/
+.gNgulf pre[class*='language-']{padding:1em;margin:0.5em 0;overflow:auto;}/*!sc*/
+.gNgulf .token.comment,.gNgulf .token.prolog,.gNgulf .token.doctype,.gNgulf .token.cdata{color:hsl(30, 20%, 50%);}/*!sc*/
+.gNgulf .token.punctuation{opacity:0.7;}/*!sc*/
+.gNgulf .namespace{opacity:0.7;}/*!sc*/
+.gNgulf .token.property,.gNgulf .token.tag,.gNgulf .token.number,.gNgulf .token.constant,.gNgulf .token.symbol{color:#4a8bb3;}/*!sc*/
+.gNgulf .token.boolean{color:#e64441;}/*!sc*/
+.gNgulf .token.selector,.gNgulf .token.attr-name,.gNgulf .token.string,.gNgulf .token.char,.gNgulf .token.builtin,.gNgulf .token.inserted{color:#a0fbaa;}/*!sc*/
+.gNgulf .token.selector+a,.gNgulf .token.attr-name+a,.gNgulf .token.string+a,.gNgulf .token.char+a,.gNgulf .token.builtin+a,.gNgulf .token.inserted+a,.gNgulf .token.selector+a:visited,.gNgulf .token.attr-name+a:visited,.gNgulf .token.string+a:visited,.gNgulf .token.char+a:visited,.gNgulf .token.builtin+a:visited,.gNgulf .token.inserted+a:visited{color:#4ed2ba;text-decoration:underline;}/*!sc*/
+.gNgulf .token.property.string{color:white;}/*!sc*/
+.gNgulf .token.operator,.gNgulf .token.entity,.gNgulf .token.url,.gNgulf .token.variable{color:hsl(40, 90%, 60%);}/*!sc*/
+.gNgulf .token.atrule,.gNgulf .token.attr-value,.gNgulf .token.keyword{color:hsl(350, 40%, 70%);}/*!sc*/
+.gNgulf .token.regex,.gNgulf .token.important{color:#e90;}/*!sc*/
+.gNgulf .token.important,.gNgulf .token.bold{font-weight:bold;}/*!sc*/
+.gNgulf .token.italic{font-style:italic;}/*!sc*/
+.gNgulf .token.entity{cursor:help;}/*!sc*/
+.gNgulf .token.deleted{color:red;}/*!sc*/
+data-styled.g32[id="sc-iJCRrD"]{content:"gNgulf,"}/*!sc*/
+.iVBJIL{opacity:0.7;transition:opacity 0.3s ease;text-align:right;}/*!sc*/
+.iVBJIL:focus-within{opacity:1;}/*!sc*/
+.iVBJIL >button{background-color:transparent;border:0;color:inherit;padding:2px 10px;font-family:Roboto,sans-serif;font-size:14px;line-height:1.5em;cursor:pointer;outline:0;}/*!sc*/
+.iVBJIL >button :hover,.iVBJIL >button :focus{background:rgba(255, 255, 255, 0.1);}/*!sc*/
+data-styled.g33[id="sc-giAqHm"]{content:"iVBJIL,"}/*!sc*/
+.gRHguk{position:relative;}/*!sc*/
+data-styled.g37[id="sc-kLojOv"]{content:"gRHguk,"}/*!sc*/
+.EQRAx{position:absolute;pointer-events:none;z-index:1;top:50%;-webkit-transform:translateY(-50%);-ms-transform:translateY(-50%);transform:translateY(-50%);right:8px;margin:auto;text-align:center;}/*!sc*/
+.EQRAx polyline{color:white;}/*!sc*/
+data-styled.g38[id="sc-iklJee"]{content:"EQRAx,"}/*!sc*/
+.wKsYT{box-sizing:border-box;min-width:100px;outline:none;display:inline-block;border-radius:2px;border:1px solid rgba(38, 50, 56, 0.5);vertical-align:bottom;padding:2px 0px 2px 6px;position:relative;width:auto;background:white;color:#263238;font-family:Montserrat,sans-serif;font-size:0.929em;line-height:1.5em;cursor:pointer;transition:border 0.25s ease,color 0.25s ease,box-shadow 0.25s ease;}/*!sc*/
+.wKsYT label{box-sizing:border-box;min-width:100px;outline:none;display:inline-block;font-family:Montserrat,sans-serif;color:#333333;vertical-align:bottom;width:auto;text-transform:none;padding:0 22px 0 4px;font-size:0.929em;line-height:1.5em;font-family:inherit;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;}/*!sc*/
+.wKsYT .dropdown-select{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;border:none;appearance:none;cursor:pointer;color:#333333;line-height:inherit;font-family:inherit;}/*!sc*/
+.wKsYT:hover,.wKsYT:focus-within{border:1px solid #32329f;color:#32329f;box-shadow:0px 0px 0px 1px #32329f;}/*!sc*/
+data-styled.g39[id="sc-jJMGnN"]{content:"wKsYT,"}/*!sc*/
+.inCspo{margin-left:10px;text-transform:none;font-size:0.929em;color:black;}/*!sc*/
+data-styled.g41[id="sc-gXfVKK"]{content:"inCspo,"}/*!sc*/
+.hiFwxj{font-family:Roboto,sans-serif;font-weight:400;line-height:1.5em;}/*!sc*/
+.hiFwxj p:last-child{margin-bottom:0;}/*!sc*/
+.hiFwxj h1{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.85714em;line-height:1.6em;color:#32329f;margin-top:0;}/*!sc*/
+.hiFwxj h2{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.57143em;line-height:1.6em;color:#333333;}/*!sc*/
+.hiFwxj code{color:#e53935;background-color:rgba(38, 50, 56, 0.05);font-family:Courier,monospace;border-radius:2px;border:1px solid rgba(38, 50, 56, 0.1);padding:0 5px;font-size:13px;font-weight:400;word-break:break-word;}/*!sc*/
+.hiFwxj pre{font-family:Courier,monospace;white-space:pre;background-color:#11171a;color:white;padding:20px;overflow-x:auto;line-height:normal;border-radius:0;border:1px solid rgba(38, 50, 56, 0.1);}/*!sc*/
+.hiFwxj pre code{background-color:transparent;color:white;padding:0;}/*!sc*/
+.hiFwxj pre code:before,.hiFwxj pre code:after{content:none;}/*!sc*/
+.hiFwxj blockquote{margin:0;margin-bottom:1em;padding:0 15px;color:#777;border-left:4px solid #ddd;}/*!sc*/
+.hiFwxj img{max-width:100%;box-sizing:content-box;}/*!sc*/
+.hiFwxj ul,.hiFwxj ol{padding-left:2em;margin:0;margin-bottom:1em;}/*!sc*/
+.hiFwxj ul ul,.hiFwxj ol ul,.hiFwxj ul ol,.hiFwxj ol ol{margin-bottom:0;margin-top:0;}/*!sc*/
+.hiFwxj table{display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all;border-collapse:collapse;border-spacing:0;margin-top:1.5em;margin-bottom:1.5em;}/*!sc*/
+.hiFwxj table tr{background-color:#fff;border-top:1px solid #ccc;}/*!sc*/
+.hiFwxj table tr:nth-child(2n){background-color:#fafafa;}/*!sc*/
+.hiFwxj table th,.hiFwxj table td{padding:6px 13px;border:1px solid #ddd;}/*!sc*/
+.hiFwxj table th{text-align:left;font-weight:bold;}/*!sc*/
+.hiFwxj .share-link{cursor:pointer;margin-left:-20px;padding:0;line-height:1;width:20px;display:inline-block;outline:0;}/*!sc*/
+.hiFwxj .share-link:before{content:'';width:15px;height:15px;background-size:contain;background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgeD0iMCIgeT0iMCIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA1MTIgNTEyIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cGF0aCBmaWxsPSIjMDEwMTAxIiBkPSJNNDU5LjcgMjMzLjRsLTkwLjUgOTAuNWMtNTAgNTAtMTMxIDUwLTE4MSAwIC03LjktNy44LTE0LTE2LjctMTkuNC0yNS44bDQyLjEtNDIuMWMyLTIgNC41LTMuMiA2LjgtNC41IDIuOSA5LjkgOCAxOS4zIDE1LjggMjcuMiAyNSAyNSA2NS42IDI0LjkgOTAuNSAwbDkwLjUtOTAuNWMyNS0yNSAyNS02NS42IDAtOTAuNSAtMjQuOS0yNS02NS41LTI1LTkwLjUgMGwtMzIuMiAzMi4yYy0yNi4xLTEwLjItNTQuMi0xMi45LTgxLjYtOC45bDY4LjYtNjguNmM1MC01MCAxMzEtNTAgMTgxIDBDNTA5LjYgMTAyLjMgNTA5LjYgMTgzLjQgNDU5LjcgMjMzLjR6TTIyMC4zIDM4Mi4ybC0zMi4yIDMyLjJjLTI1IDI0LjktNjUuNiAyNC45LTkwLjUgMCAtMjUtMjUtMjUtNjUuNiAwLTkwLjVsOTAuNS05MC41YzI1LTI1IDY1LjUtMjUgOTAuNSAwIDcuOCA3LjggMTIuOSAxNy4yIDE1LjggMjcuMSAyLjQtMS40IDQuOC0yLjUgNi44LTQuNWw0Mi4xLTQyYy01LjQtOS4yLTExLjYtMTgtMTkuNC0yNS44IC01MC01MC0xMzEtNTAtMTgxIDBsLTkwLjUgOTAuNWMtNTAgNTAtNTAgMTMxIDAgMTgxIDUwIDUwIDEzMSA1MCAxODEgMGw2OC42LTY4LjZDMjc0LjYgMzk1LjEgMjQ2LjQgMzkyLjMgMjIwLjMgMzgyLjJ6Ii8+PC9zdmc+Cg==');opacity:0.5;visibility:hidden;display:inline-block;vertical-align:middle;}/*!sc*/
+.hiFwxj h1:hover>.share-link::before,.hiFwxj h2:hover>.share-link::before,.hiFwxj .share-link:hover::before{visibility:visible;}/*!sc*/
+.hiFwxj a{text-decoration:auto;color:#32329f;}/*!sc*/
+.hiFwxj a:visited{color:#32329f;}/*!sc*/
+.hiFwxj a:hover{color:#6868cf;text-decoration:auto;}/*!sc*/
+.eiVoHx{font-family:Roboto,sans-serif;font-weight:400;line-height:1.5em;}/*!sc*/
+.eiVoHx p:last-child{margin-bottom:0;}/*!sc*/
+.eiVoHx p:first-child{margin-top:0;}/*!sc*/
+.eiVoHx p:last-child{margin-bottom:0;}/*!sc*/
+.eiVoHx h1{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.85714em;line-height:1.6em;color:#32329f;margin-top:0;}/*!sc*/
+.eiVoHx h2{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.57143em;line-height:1.6em;color:#333333;}/*!sc*/
+.eiVoHx code{color:#e53935;background-color:rgba(38, 50, 56, 0.05);font-family:Courier,monospace;border-radius:2px;border:1px solid rgba(38, 50, 56, 0.1);padding:0 5px;font-size:13px;font-weight:400;word-break:break-word;}/*!sc*/
+.eiVoHx pre{font-family:Courier,monospace;white-space:pre;background-color:#11171a;color:white;padding:20px;overflow-x:auto;line-height:normal;border-radius:0;border:1px solid rgba(38, 50, 56, 0.1);}/*!sc*/
+.eiVoHx pre code{background-color:transparent;color:white;padding:0;}/*!sc*/
+.eiVoHx pre code:before,.eiVoHx pre code:after{content:none;}/*!sc*/
+.eiVoHx blockquote{margin:0;margin-bottom:1em;padding:0 15px;color:#777;border-left:4px solid #ddd;}/*!sc*/
+.eiVoHx img{max-width:100%;box-sizing:content-box;}/*!sc*/
+.eiVoHx ul,.eiVoHx ol{padding-left:2em;margin:0;margin-bottom:1em;}/*!sc*/
+.eiVoHx ul ul,.eiVoHx ol ul,.eiVoHx ul ol,.eiVoHx ol ol{margin-bottom:0;margin-top:0;}/*!sc*/
+.eiVoHx table{display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all;border-collapse:collapse;border-spacing:0;margin-top:1.5em;margin-bottom:1.5em;}/*!sc*/
+.eiVoHx table tr{background-color:#fff;border-top:1px solid #ccc;}/*!sc*/
+.eiVoHx table tr:nth-child(2n){background-color:#fafafa;}/*!sc*/
+.eiVoHx table th,.eiVoHx table td{padding:6px 13px;border:1px solid #ddd;}/*!sc*/
+.eiVoHx table th{text-align:left;font-weight:bold;}/*!sc*/
+.eiVoHx .share-link{cursor:pointer;margin-left:-20px;padding:0;line-height:1;width:20px;display:inline-block;outline:0;}/*!sc*/
+.eiVoHx .share-link:before{content:'';width:15px;height:15px;background-size:contain;background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgeD0iMCIgeT0iMCIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA1MTIgNTEyIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cGF0aCBmaWxsPSIjMDEwMTAxIiBkPSJNNDU5LjcgMjMzLjRsLTkwLjUgOTAuNWMtNTAgNTAtMTMxIDUwLTE4MSAwIC03LjktNy44LTE0LTE2LjctMTkuNC0yNS44bDQyLjEtNDIuMWMyLTIgNC41LTMuMiA2LjgtNC41IDIuOSA5LjkgOCAxOS4zIDE1LjggMjcuMiAyNSAyNSA2NS42IDI0LjkgOTAuNSAwbDkwLjUtOTAuNWMyNS0yNSAyNS02NS42IDAtOTAuNSAtMjQuOS0yNS02NS41LTI1LTkwLjUgMGwtMzIuMiAzMi4yYy0yNi4xLTEwLjItNTQuMi0xMi45LTgxLjYtOC45bDY4LjYtNjguNmM1MC01MCAxMzEtNTAgMTgxIDBDNTA5LjYgMTAyLjMgNTA5LjYgMTgzLjQgNDU5LjcgMjMzLjR6TTIyMC4zIDM4Mi4ybC0zMi4yIDMyLjJjLTI1IDI0LjktNjUuNiAyNC45LTkwLjUgMCAtMjUtMjUtMjUtNjUuNiAwLTkwLjVsOTAuNS05MC41YzI1LTI1IDY1LjUtMjUgOTAuNSAwIDcuOCA3LjggMTIuOSAxNy4yIDE1LjggMjcuMSAyLjQtMS40IDQuOC0yLjUgNi44LTQuNWw0Mi4xLTQyYy01LjQtOS4yLTExLjYtMTgtMTkuNC0yNS44IC01MC01MC0xMzEtNTAtMTgxIDBsLTkwLjUgOTAuNWMtNTAgNTAtNTAgMTMxIDAgMTgxIDUwIDUwIDEzMSA1MCAxODEgMGw2OC42LTY4LjZDMjc0LjYgMzk1LjEgMjQ2LjQgMzkyLjMgMjIwLjMgMzgyLjJ6Ii8+PC9zdmc+Cg==');opacity:0.5;visibility:hidden;display:inline-block;vertical-align:middle;}/*!sc*/
+.eiVoHx h1:hover>.share-link::before,.eiVoHx h2:hover>.share-link::before,.eiVoHx .share-link:hover::before{visibility:visible;}/*!sc*/
+.eiVoHx a{text-decoration:auto;color:#32329f;}/*!sc*/
+.eiVoHx a:visited{color:#32329f;}/*!sc*/
+.eiVoHx a:hover{color:#6868cf;text-decoration:auto;}/*!sc*/
+.iAZUDN{font-family:Roboto,sans-serif;font-weight:400;line-height:1.5em;}/*!sc*/
+.iAZUDN p:last-child{margin-bottom:0;}/*!sc*/
+.iAZUDN p:first-child{margin-top:0;}/*!sc*/
+.iAZUDN p:last-child{margin-bottom:0;}/*!sc*/
+.iAZUDN p{display:inline-block;}/*!sc*/
+.iAZUDN h1{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.85714em;line-height:1.6em;color:#32329f;margin-top:0;}/*!sc*/
+.iAZUDN h2{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.57143em;line-height:1.6em;color:#333333;}/*!sc*/
+.iAZUDN code{color:#e53935;background-color:rgba(38, 50, 56, 0.05);font-family:Courier,monospace;border-radius:2px;border:1px solid rgba(38, 50, 56, 0.1);padding:0 5px;font-size:13px;font-weight:400;word-break:break-word;}/*!sc*/
+.iAZUDN pre{font-family:Courier,monospace;white-space:pre;background-color:#11171a;color:white;padding:20px;overflow-x:auto;line-height:normal;border-radius:0;border:1px solid rgba(38, 50, 56, 0.1);}/*!sc*/
+.iAZUDN pre code{background-color:transparent;color:white;padding:0;}/*!sc*/
+.iAZUDN pre code:before,.iAZUDN pre code:after{content:none;}/*!sc*/
+.iAZUDN blockquote{margin:0;margin-bottom:1em;padding:0 15px;color:#777;border-left:4px solid #ddd;}/*!sc*/
+.iAZUDN img{max-width:100%;box-sizing:content-box;}/*!sc*/
+.iAZUDN ul,.iAZUDN ol{padding-left:2em;margin:0;margin-bottom:1em;}/*!sc*/
+.iAZUDN ul ul,.iAZUDN ol ul,.iAZUDN ul ol,.iAZUDN ol ol{margin-bottom:0;margin-top:0;}/*!sc*/
+.iAZUDN table{display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all;border-collapse:collapse;border-spacing:0;margin-top:1.5em;margin-bottom:1.5em;}/*!sc*/
+.iAZUDN table tr{background-color:#fff;border-top:1px solid #ccc;}/*!sc*/
+.iAZUDN table tr:nth-child(2n){background-color:#fafafa;}/*!sc*/
+.iAZUDN table th,.iAZUDN table td{padding:6px 13px;border:1px solid #ddd;}/*!sc*/
+.iAZUDN table th{text-align:left;font-weight:bold;}/*!sc*/
+.iAZUDN .share-link{cursor:pointer;margin-left:-20px;padding:0;line-height:1;width:20px;display:inline-block;outline:0;}/*!sc*/
+.iAZUDN .share-link:before{content:'';width:15px;height:15px;background-size:contain;background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgeD0iMCIgeT0iMCIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA1MTIgNTEyIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cGF0aCBmaWxsPSIjMDEwMTAxIiBkPSJNNDU5LjcgMjMzLjRsLTkwLjUgOTAuNWMtNTAgNTAtMTMxIDUwLTE4MSAwIC03LjktNy44LTE0LTE2LjctMTkuNC0yNS44bDQyLjEtNDIuMWMyLTIgNC41LTMuMiA2LjgtNC41IDIuOSA5LjkgOCAxOS4zIDE1LjggMjcuMiAyNSAyNSA2NS42IDI0LjkgOTAuNSAwbDkwLjUtOTAuNWMyNS0yNSAyNS02NS42IDAtOTAuNSAtMjQuOS0yNS02NS41LTI1LTkwLjUgMGwtMzIuMiAzMi4yYy0yNi4xLTEwLjItNTQuMi0xMi45LTgxLjYtOC45bDY4LjYtNjguNmM1MC01MCAxMzEtNTAgMTgxIDBDNTA5LjYgMTAyLjMgNTA5LjYgMTgzLjQgNDU5LjcgMjMzLjR6TTIyMC4zIDM4Mi4ybC0zMi4yIDMyLjJjLTI1IDI0LjktNjUuNiAyNC45LTkwLjUgMCAtMjUtMjUtMjUtNjUuNiAwLTkwLjVsOTAuNS05MC41YzI1LTI1IDY1LjUtMjUgOTAuNSAwIDcuOCA3LjggMTIuOSAxNy4yIDE1LjggMjcuMSAyLjQtMS40IDQuOC0yLjUgNi44LTQuNWw0Mi4xLTQyYy01LjQtOS4yLTExLjYtMTgtMTkuNC0yNS44IC01MC01MC0xMzEtNTAtMTgxIDBsLTkwLjUgOTAuNWMtNTAgNTAtNTAgMTMxIDAgMTgxIDUwIDUwIDEzMSA1MCAxODEgMGw2OC42LTY4LjZDMjc0LjYgMzk1LjEgMjQ2LjQgMzkyLjMgMjIwLjMgMzgyLjJ6Ii8+PC9zdmc+Cg==');opacity:0.5;visibility:hidden;display:inline-block;vertical-align:middle;}/*!sc*/
+.iAZUDN h1:hover>.share-link::before,.iAZUDN h2:hover>.share-link::before,.iAZUDN .share-link:hover::before{visibility:visible;}/*!sc*/
+.iAZUDN a{text-decoration:auto;color:#32329f;}/*!sc*/
+.iAZUDN a:visited{color:#32329f;}/*!sc*/
+.iAZUDN a:hover{color:#6868cf;text-decoration:auto;}/*!sc*/
+data-styled.g42[id="sc-cBoqA-D"]{content:"hiFwxj,eiVoHx,iAZUDN,"}/*!sc*/
+.jbGiJk{display:inline;}/*!sc*/
+data-styled.g43[id="sc-ciSkZQ"]{content:"jbGiJk,"}/*!sc*/
+.ecJSzs{position:relative;}/*!sc*/
+data-styled.g44[id="sc-jcwpoF"]{content:"ecJSzs,"}/*!sc*/
+.bDBsiB:hover>.sc-giAqHm{opacity:1;}/*!sc*/
+data-styled.g49[id="sc-cTJkRq"]{content:"bDBsiB,"}/*!sc*/
+.dRMQQd{font-family:Courier,monospace;font-size:13px;white-space:pre;contain:content;overflow-x:auto;}/*!sc*/
+.dRMQQd .redoc-json code>.collapser{display:none;pointer-events:none;}/*!sc*/
+.dRMQQd .callback-function{color:gray;}/*!sc*/
+.dRMQQd .collapser:after{content:'-';cursor:pointer;}/*!sc*/
+.dRMQQd .collapsed>.collapser:after{content:'+';cursor:pointer;}/*!sc*/
+.dRMQQd .ellipsis:after{content:' … ';}/*!sc*/
+.dRMQQd .collapsible{margin-left:2em;}/*!sc*/
+.dRMQQd .hoverable{padding-top:1px;padding-bottom:1px;padding-left:2px;padding-right:2px;border-radius:2px;}/*!sc*/
+.dRMQQd .hovered{background-color:rgba(235, 238, 249, 1);}/*!sc*/
+.dRMQQd .collapser{background-color:transparent;border:0;color:#fff;font-family:Courier,monospace;font-size:13px;padding-right:6px;padding-left:6px;padding-top:0;padding-bottom:0;display:flex;align-items:center;justify-content:center;width:15px;height:15px;position:absolute;top:4px;left:-1.5em;cursor:default;user-select:none;-webkit-user-select:none;padding:2px;}/*!sc*/
+.dRMQQd .collapser:focus{outline-color:#fff;outline-style:dotted;outline-width:1px;}/*!sc*/
+.dRMQQd ul{list-style-type:none;padding:0px;margin:0px 0px 0px 26px;}/*!sc*/
+.dRMQQd li{position:relative;display:block;}/*!sc*/
+.dRMQQd .hoverable{display:inline-block;}/*!sc*/
+.dRMQQd .selected{outline-style:solid;outline-width:1px;outline-style:dotted;}/*!sc*/
+.dRMQQd .collapsed>.collapsible{display:none;}/*!sc*/
+.dRMQQd .ellipsis{display:none;}/*!sc*/
+.dRMQQd .collapsed>.ellipsis{display:inherit;}/*!sc*/
+data-styled.g50[id="sc-jNnpgf"]{content:"dRMQQd,"}/*!sc*/
+.YYhtM{padding:0.9em;background-color:rgba(38,50,56,0.4);margin:0 0 10px 0;display:block;font-family:Montserrat,sans-serif;font-size:0.929em;line-height:1.5em;}/*!sc*/
+data-styled.g51[id="sc-dPaNzb"]{content:"YYhtM,"}/*!sc*/
+.kIkkGR{font-family:Montserrat,sans-serif;font-size:12px;position:absolute;z-index:1;top:-11px;left:12px;font-weight:600;color:rgba(255,255,255,0.7);}/*!sc*/
+data-styled.g52[id="sc-bBjRSK"]{content:"kIkkGR,"}/*!sc*/
+.djDGzb{position:relative;}/*!sc*/
+data-styled.g53[id="sc-cOifOx"]{content:"djDGzb,"}/*!sc*/
+.gljdO{margin:0 0 10px 0;display:block;background-color:rgba(38,50,56,0.4);border:none;padding:0.9em 1.6em 0.9em 0.9em;box-shadow:none;}/*!sc*/
+.gljdO label{color:#ffffff;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;font-size:1em;text-transform:none;border:none;}/*!sc*/
+.gljdO:hover,.gljdO:focus-within{border:none;box-shadow:none;background-color:rgba(38,50,56,0.7);}/*!sc*/
+data-styled.g54[id="sc-Arkig"]{content:"gljdO,"}/*!sc*/
+.ebTkPI{margin-top:15px;}/*!sc*/
+data-styled.g56[id="sc-hTRkXS"]{content:"ebTkPI,"}/*!sc*/
+.hNSFbP{vertical-align:middle;font-size:13px;line-height:20px;}/*!sc*/
+data-styled.g58[id="sc-gSYDno"]{content:"hNSFbP,"}/*!sc*/
+.gYlTYC{color:rgba(102,102,102,0.9);}/*!sc*/
+data-styled.g59[id="sc-laZMeD"]{content:"gYlTYC,"}/*!sc*/
+.eUUxjA{color:#666;}/*!sc*/
+data-styled.g60[id="sc-iNiQym"]{content:"eUUxjA,"}/*!sc*/
+.hJEpGc{color:#d41f1c;font-size:0.9em;font-weight:normal;margin-left:20px;line-height:1;}/*!sc*/
+data-styled.g62[id="sc-eJocfd"]{content:"hJEpGc,"}/*!sc*/
+.gbfOlU{border-radius:2px;word-break:break-word;background-color:rgba(51,51,51,0.05);color:rgba(51,51,51,0.9);padding:0 5px;border:1px solid rgba(51,51,51,0.1);font-family:Courier,monospace;}/*!sc*/
++{margin-left:0;}/*!sc*/
+data-styled.g66[id="sc-lbVvkl"]{content:"gbfOlU,"}/*!sc*/
+.jzOzEY{margin-top:0;margin-bottom:0.5em;}/*!sc*/
+data-styled.g92[id="sc-csTbga"]{content:"jzOzEY,"}/*!sc*/
+.fmIJXA::before{content:'|';display:inline-block;opacity:0.5;width:15px;text-align:center;}/*!sc*/
+.fmIJXA:last-child::after{display:none;}/*!sc*/
+data-styled.g94[id="sc-bsatvw"]{content:"fmIJXA,"}/*!sc*/
+.yBIXE{overflow:hidden;}/*!sc*/
+data-styled.g95[id="sc-gIvpjj"]{content:"yBIXE,"}/*!sc*/
+.kgYvqF{display:flex;flex-wrap:wrap;margin-left:-15px;}/*!sc*/
+data-styled.g96[id="sc-euEtCS"]{content:"kgYvqF,"}/*!sc*/
+.ljhSfN{width:9ex;display:inline-block;height:13px;line-height:13px;background-color:#333;border-radius:3px;background-repeat:no-repeat;background-position:6px 4px;font-size:7px;font-family:Verdana,sans-serif;color:white;text-transform:uppercase;text-align:center;font-weight:bold;vertical-align:middle;margin-right:6px;margin-top:2px;}/*!sc*/
+.ljhSfN.get{background-color:#2F8132;}/*!sc*/
+.ljhSfN.post{background-color:#186FAF;}/*!sc*/
+.ljhSfN.put{background-color:#95507c;}/*!sc*/
+.ljhSfN.options{background-color:#947014;}/*!sc*/
+.ljhSfN.patch{background-color:#bf581d;}/*!sc*/
+.ljhSfN.delete{background-color:#cc3333;}/*!sc*/
+.ljhSfN.basic{background-color:#707070;}/*!sc*/
+.ljhSfN.link{background-color:#07818F;}/*!sc*/
+.ljhSfN.head{background-color:#A23DAD;}/*!sc*/
+.ljhSfN.hook{background-color:#32329f;}/*!sc*/
+.ljhSfN.schema{background-color:#707070;}/*!sc*/
+data-styled.g100[id="sc-WZYuq"]{content:"ljhSfN,"}/*!sc*/
+.kFlwxv{margin:0;padding:0;}/*!sc*/
+.kFlwxv:first-child{padding-bottom:32px;}/*!sc*/
+.sc-ikXwFL .sc-ikXwFL{font-size:0.929em;}/*!sc*/
+data-styled.g101[id="sc-ikXwFL"]{content:"kFlwxv,"}/*!sc*/
+.wfKoP{list-style:none inside none;overflow:hidden;text-overflow:ellipsis;padding:0;}/*!sc*/
+data-styled.g102[id="sc-uxdHm"]{content:"wfKoP,"}/*!sc*/
+.csOmlD{cursor:pointer;color:#333333;margin:0;padding:12.5px 20px;display:flex;justify-content:space-between;font-family:Montserrat,sans-serif;font-size:0.929em;text-transform:none;background-color:#fafafa;}/*!sc*/
+.csOmlD:hover{color:#32329f;background-color:#e1e1e1;}/*!sc*/
+.csOmlD .sc-dIsUm{height:1.5em;width:1.5em;}/*!sc*/
+.csOmlD .sc-dIsUm polygon{fill:#333333;}/*!sc*/
+.cPIfSp{cursor:pointer;color:#333333;margin:0;padding:12.5px 20px;display:flex;justify-content:space-between;font-family:Montserrat,sans-serif;background-color:#fafafa;}/*!sc*/
+.cPIfSp:hover{color:#32329f;background-color:#ededed;}/*!sc*/
+.cPIfSp .sc-dIsUm{height:1.5em;width:1.5em;}/*!sc*/
+.cPIfSp .sc-dIsUm polygon{fill:#333333;}/*!sc*/
+data-styled.g103[id="sc-biJonp"]{content:"csOmlD,cPIfSp,"}/*!sc*/
+.ecDcqK{display:inline-block;vertical-align:middle;width:calc(100% - 38px);overflow:hidden;text-overflow:ellipsis;}/*!sc*/
+data-styled.g104[id="sc-eHEENM"]{content:"ecDcqK,"}/*!sc*/
+.gpoXFq{font-size:0.8em;margin-top:10px;text-align:center;position:fixed;width:260px;bottom:0;background:#fafafa;}/*!sc*/
+.gpoXFq a,.gpoXFq a:visited,.gpoXFq a:hover{color:#333333!important;padding:5px 0;border-top:1px solid #e1e1e1;text-decoration:none;display:flex;align-items:center;justify-content:center;}/*!sc*/
+.gpoXFq img{width:15px;margin-right:5px;}/*!sc*/
+@media screen and (max-width: 50rem){.gpoXFq{width:100%;}}/*!sc*/
+data-styled.g105[id="sc-hzUIXb"]{content:"gpoXFq,"}/*!sc*/
+.dPUnAU{cursor:pointer;position:relative;margin-bottom:5px;}/*!sc*/
+data-styled.g111[id="sc-fXgAZu"]{content:"dPUnAU,"}/*!sc*/
+.fweBDh{font-family:Courier,monospace;margin-left:10px;flex:1;overflow-x:hidden;text-overflow:ellipsis;}/*!sc*/
+data-styled.g112[id="sc-EZqKH"]{content:"fweBDh,"}/*!sc*/
+.dyPdTB{outline:0;color:inherit;width:100%;text-align:left;cursor:pointer;padding:10px 30px 10px 20px;border-radius:4px 4px 0 0;background-color:#11171a;display:flex;white-space:nowrap;align-items:center;border:1px solid transparent;border-bottom:0;transition:border-color 0.25s ease;}/*!sc*/
+.dyPdTB ..sc-EZqKH{color:#ffffff;}/*!sc*/
+.dyPdTB:focus{box-shadow:inset 0 2px 2px rgba(0, 0, 0, 0.45),0 2px 0 rgba(128, 128, 128, 0.25);}/*!sc*/
+data-styled.g113[id="sc-jXcxbU"]{content:"dyPdTB,"}/*!sc*/
+.bxxoyg{font-size:0.929em;line-height:20px;background-color:#186FAF;color:#ffffff;padding:3px 10px;text-transform:uppercase;font-family:Montserrat,sans-serif;margin:0;}/*!sc*/
+data-styled.g114[id="sc-eEVmNh"]{content:"bxxoyg,"}/*!sc*/
+.gZkmV{position:absolute;width:100%;z-index:100;background:#fafafa;color:#263238;box-sizing:border-box;box-shadow:0 0 6px rgba(0, 0, 0, 0.33);overflow:hidden;border-bottom-left-radius:4px;border-bottom-right-radius:4px;transition:all 0.25s ease;visibility:hidden;transform:translateY(-50%) scaleY(0);}/*!sc*/
+data-styled.g115[id="sc-fmdNqK"]{content:"gZkmV,"}/*!sc*/
+.dpirXv{padding:10px;}/*!sc*/
+data-styled.g116[id="sc-ljsmAT"]{content:"dpirXv,"}/*!sc*/
+.jHBVdg{padding:5px;border:1px solid #ccc;background:#fff;word-break:break-all;color:#32329f;}/*!sc*/
+.jHBVdg >span{color:#333333;}/*!sc*/
+data-styled.g117[id="sc-jlZJtk"]{content:"jHBVdg,"}/*!sc*/
+.fGSKVk{display:block;border:0;width:100%;text-align:left;padding:10px;border-radius:2px;margin-bottom:4px;line-height:1.5em;cursor:pointer;color:#1d8127;background-color:rgba(29,129,39,0.07);}/*!sc*/
+.fGSKVk:focus{outline:auto #1d8127;}/*!sc*/
+data-styled.g120[id="sc-cbeScr"]{content:"fGSKVk,"}/*!sc*/
+.kFUVBT{vertical-align:top;}/*!sc*/
+data-styled.g123[id="sc-fWWYYj"]{content:"kFUVBT,"}/*!sc*/
+.ihyEpP{font-size:1.3em;padding:0.2em 0;margin:3em 0 1.1em;color:#333333;font-weight:normal;}/*!sc*/
+data-styled.g124[id="sc-fIxmyq"]{content:"ihyEpP,"}/*!sc*/
+.kerVZv{margin-bottom:30px;}/*!sc*/
+data-styled.g129[id="sc-iGkqmR"]{content:"kerVZv,"}/*!sc*/
+.kOpTTu{user-select:none;width:20px;height:20px;align-self:center;display:flex;flex-direction:column;color:#32329f;}/*!sc*/
+data-styled.g130[id="sc-irKDMY"]{content:"kOpTTu,"}/*!sc*/
+.cBaGwZ{width:260px;background-color:#fafafa;overflow:hidden;display:flex;flex-direction:column;backface-visibility:hidden;height:100vh;position:sticky;position:-webkit-sticky;top:0;}/*!sc*/
+@media screen and (max-width: 50rem){.cBaGwZ{position:fixed;z-index:20;width:100%;background:#fafafa;display:none;}}/*!sc*/
+@media print{.cBaGwZ{display:none;}}/*!sc*/
+data-styled.g131[id="sc-eWnToQ"]{content:"cBaGwZ,"}/*!sc*/
+.kTODLr{outline:none;user-select:none;background-color:#f2f2f2;color:#32329f;display:none;cursor:pointer;position:fixed;right:20px;z-index:100;border-radius:50%;box-shadow:0 0 20px rgba(0, 0, 0, 0.3);bottom:44px;width:60px;height:60px;padding:0 20px;}/*!sc*/
+@media screen and (max-width: 50rem){.kTODLr{display:flex;}}/*!sc*/
+.kTODLr svg{color:#0065FB;}/*!sc*/
+@media print{.kTODLr{display:none;}}/*!sc*/
+data-styled.g132[id="sc-kTCsyZ"]{content:"kTODLr,"}/*!sc*/
+.icgfVN{font-family:Roboto,sans-serif;font-size:14px;font-weight:400;line-height:1.5em;color:#333333;display:flex;position:relative;text-align:left;-webkit-font-smoothing:antialiased;font-smoothing:antialiased;text-rendering:optimizeSpeed!important;tap-highlight-color:rgba(0, 0, 0, 0);text-size-adjust:100%;}/*!sc*/
+.icgfVN *{box-sizing:border-box;-webkit-tap-highlight-color:rgba(255, 255, 255, 0);}/*!sc*/
+data-styled.g133[id="sc-dvUynS"]{content:"icgfVN,"}/*!sc*/
+.iJcSBn{z-index:1;position:relative;overflow:hidden;width:calc(100% - 260px);contain:layout;}/*!sc*/
+@media print,screen and (max-width: 50rem){.iJcSBn{width:100%;}}/*!sc*/
+data-styled.g134[id="sc-jtiXyb"]{content:"iJcSBn,"}/*!sc*/
+.kPMcdA{background:#263238;position:absolute;top:0;bottom:0;right:0;width:calc((100% - 260px) * 0.4);}/*!sc*/
+@media print,screen and (max-width: 75rem){.kPMcdA{display:none;}}/*!sc*/
+data-styled.g135[id="sc-ellfGg"]{content:"kPMcdA,"}/*!sc*/
+.gfYYFa{padding:5px 0;}/*!sc*/
+data-styled.g136[id="sc-kizEQp"]{content:"gfYYFa,"}/*!sc*/
+.kSOHIo{width:calc(100% - 40px);box-sizing:border-box;margin:0 20px;padding:5px 10px 5px 20px;border:0;border-bottom:1px solid #e1e1e1;font-family:Roboto,sans-serif;font-weight:bold;font-size:13px;color:#333333;background-color:transparent;outline:none;}/*!sc*/
+data-styled.g137[id="sc-cKRKFi"]{content:"kSOHIo,"}/*!sc*/
+.jeuwmA{position:absolute;left:20px;height:1.8em;width:0.9em;}/*!sc*/
+.jeuwmA path{fill:#333333;}/*!sc*/
+data-styled.g138[id="sc-iIgjPr"]{content:"jeuwmA,"}/*!sc*/
+</style>
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+</head>
+
+<body>
+  
+      <div id="redoc"><div class="sc-dvUynS icgfVN redoc-wrap"><div class="sc-eWnToQ cBaGwZ menu-content" style="top:0px;height:calc(100vh - 0px)"><div role="search" class="sc-kizEQp gfYYFa"><svg class="sc-iIgjPr jeuwmA search-icon" version="1.1" viewBox="0 0 1000 1000" x="0px" xmlns="http://www.w3.org/2000/svg" y="0px"><path d="M968.2,849.4L667.3,549c83.9-136.5,66.7-317.4-51.7-435.6C477.1-25,252.5-25,113.9,113.4c-138.5,138.3-138.5,362.6,0,501C219.2,730.1,413.2,743,547.6,666.5l301.9,301.4c43.6,43.6,76.9,14.9,104.2-12.4C981,928.3,1011.8,893,968.2,849.4z M524.5,522c-88.9,88.7-233,88.7-321.8,0c-88.9-88.7-88.9-232.6,0-321.3c88.9-88.7,233-88.7,321.8,0C613.4,289.4,613.4,433.3,524.5,522z"></path></svg><input placeholder="Search..." aria-label="Search" type="text" class="sc-cKRKFi kSOHIo search-input" value=""/></div><div class="sc-kLojOv gRHguk scrollbar-container undefined"><ul role="menu" class="sc-ikXwFL kFlwxv"><li tabindex="0" depth="1" data-item-id="tag/client-messages" role="menuitem" aria-label="client-messages" aria-expanded="false" class="sc-uxdHm wfKoP"><label class="sc-biJonp csOmlD -depth1"><span width="calc(100% - 38px)" title="client-messages" class="sc-eHEENM ecDcqK">client-messages</span></label></li><li tabindex="0" depth="1" data-item-id="tag/server-events" role="menuitem" aria-label="server-events" aria-expanded="false" class="sc-uxdHm wfKoP"><label class="sc-biJonp csOmlD -depth1"><span width="calc(100% - 38px)" title="server-events" class="sc-eHEENM ecDcqK">server-events</span></label></li><li tabindex="0" depth="1" data-item-id="tag/heartbeat" role="menuitem" aria-label="heartbeat" aria-expanded="false" class="sc-uxdHm wfKoP"><label class="sc-biJonp csOmlD -depth1"><span width="calc(100% - 38px)" title="heartbeat" class="sc-eHEENM ecDcqK">heartbeat</span></label></li><li tabindex="0" depth="2" data-item-id="/paths/~1ws/post" role="menuitem" aria-label="WebSocket message endpoint (for code generation only)" aria-expanded="false" class="sc-uxdHm wfKoP"><label class="sc-biJonp cPIfSp -depth2"><span type="post" class="sc-WZYuq ljhSfN operation-type post">post</span><span tabindex="0" width="calc(100% - 38px)" class="sc-eHEENM ecDcqK">WebSocket message endpoint (for code generation only)</span></label></li></ul><div class="sc-hzUIXb gpoXFq"><a target="_blank" rel="noopener noreferrer" href="https://redocly.com/redoc/">API docs by Redocly</a></div></div></div><div class="sc-kTCsyZ kTODLr"><div class="sc-irKDMY kOpTTu"><svg class="" style="transform:translate(2px, -4px) rotate(180deg);transition:transform 0.2s ease" viewBox="0 0 926.23699 573.74994" version="1.1" x="0px" y="0px" width="15" height="15"><g transform="translate(904.92214,-879.1482)"><path d="
+          m -673.67664,1221.6502 -231.2455,-231.24803 55.6165,
+          -55.627 c 30.5891,-30.59485 56.1806,-55.627 56.8701,-55.627 0.6894,
+          0 79.8637,78.60862 175.9427,174.68583 l 174.6892,174.6858 174.6892,
+          -174.6858 c 96.079,-96.07721 175.253196,-174.68583 175.942696,
+          -174.68583 0.6895,0 26.281,25.03215 56.8701,
+          55.627 l 55.6165,55.627 -231.245496,231.24803 c -127.185,127.1864
+          -231.5279,231.248 -231.873,231.248 -0.3451,0 -104.688,
+          -104.0616 -231.873,-231.248 z
+        " fill="currentColor"></path></g></svg><svg class="" style="transform:translate(2px, 4px);transition:transform 0.2s ease" viewBox="0 0 926.23699 573.74994" version="1.1" x="0px" y="0px" width="15" height="15"><g transform="translate(904.92214,-879.1482)"><path d="
+          m -673.67664,1221.6502 -231.2455,-231.24803 55.6165,
+          -55.627 c 30.5891,-30.59485 56.1806,-55.627 56.8701,-55.627 0.6894,
+          0 79.8637,78.60862 175.9427,174.68583 l 174.6892,174.6858 174.6892,
+          -174.6858 c 96.079,-96.07721 175.253196,-174.68583 175.942696,
+          -174.68583 0.6895,0 26.281,25.03215 56.8701,
+          55.627 l 55.6165,55.627 -231.245496,231.24803 c -127.185,127.1864
+          -231.5279,231.248 -231.873,231.248 -0.3451,0 -104.688,
+          -104.0616 -231.873,-231.248 z
+        " fill="currentColor"></path></g></svg></div></div><div class="sc-jtiXyb iJcSBn api-content"><div class="sc-eCApnb jEUqHO"><div class="sc-iCoGMa dDvnQS"><div class="sc-hKFxyK jZFlEf api-info"><h1 class="sc-fujyAr sc-csTbga kGsWGp jzOzEY">KubeGame WebSocket API<!-- --> <span>(<!-- -->1.0.0<!-- -->)</span></h1><p>Download OpenAPI specification<!-- -->:</p><div class="sc-iJCRrD sc-cBoqA-D gNgulf hiFwxj"><div class="sc-gIvpjj yBIXE"><div class="sc-euEtCS kgYvqF"> <!-- --> <span class="sc-bsatvw fmIJXA">License:<!-- --> <a>MIT</a></span> </div></div></div><div data-role="redoc-summary" html="" class="sc-iJCRrD sc-cBoqA-D gNgulf hiFwxj"></div><div data-role="redoc-description" html="&lt;p&gt;WebSocket API specification for the KubeGame project. This API handles real-time communication
+between the client (frontend) and server (backend) for the Kubernetes scheduling game.&lt;/p&gt;
+&lt;p&gt;All messages are exchanged via WebSocket connection and follow a consistent structure with
+&lt;code&gt;type&lt;/code&gt;, &lt;code&gt;data&lt;/code&gt;, and &lt;code&gt;timestamp&lt;/code&gt; fields.&lt;/p&gt;
+" class="sc-iJCRrD sc-cBoqA-D gNgulf hiFwxj"><p>WebSocket API specification for the KubeGame project. This API handles real-time communication
+between the client (frontend) and server (backend) for the Kubernetes scheduling game.</p>
+<p>All messages are exchanged via WebSocket connection and follow a consistent structure with
+<code>type</code>, <code>data</code>, and <code>timestamp</code> fields.</p>
+</div></div></div></div><div id="tag/client-messages" data-section-id="tag/client-messages" class="sc-eCApnb jEUqHO"><div class="sc-iCoGMa dDvnQS"><div class="sc-hKFxyK jZFlEf"><h2 class="sc-pNWdL ifgvjf"><a class="sc-crzoA-D jEsELy" href="#tag/client-messages" aria-label="tag/client-messages"></a>client-messages</h2></div></div><div class="sc-hKFxyK kzThor"><div class="sc-iJCRrD sc-cBoqA-D gNgulf hiFwxj redoc-markdown " html="&lt;p&gt;Messages sent from client to server&lt;/p&gt;
+"><p>Messages sent from client to server</p>
+</div></div></div><div id="tag/server-events" data-section-id="tag/server-events" class="sc-eCApnb jEUqHO"><div class="sc-iCoGMa dDvnQS"><div class="sc-hKFxyK jZFlEf"><h2 class="sc-pNWdL ifgvjf"><a class="sc-crzoA-D jEsELy" href="#tag/server-events" aria-label="tag/server-events"></a>server-events</h2></div></div><div class="sc-hKFxyK kzThor"><div class="sc-iJCRrD sc-cBoqA-D gNgulf hiFwxj redoc-markdown " html="&lt;p&gt;Events sent from server to client&lt;/p&gt;
+"><p>Events sent from server to client</p>
+</div></div></div><div id="tag/heartbeat" data-section-id="tag/heartbeat" class="sc-eCApnb jEUqHO"><div class="sc-iCoGMa dDvnQS"><div class="sc-hKFxyK jZFlEf"><h2 class="sc-pNWdL ifgvjf"><a class="sc-crzoA-D jEsELy" href="#tag/heartbeat" aria-label="tag/heartbeat"></a>heartbeat</h2></div></div><div class="sc-hKFxyK kzThor"><div class="sc-iJCRrD sc-cBoqA-D gNgulf hiFwxj redoc-markdown " html="&lt;p&gt;Ping/pong heartbeat messages&lt;/p&gt;
+"><p>Ping/pong heartbeat messages</p>
+</div></div></div><div id="/paths/~1ws/post" data-section-id="/paths/~1ws/post" class="sc-eCApnb ldtQnB"><div class="sc-iCoGMa dDvnQS"><div class="sc-hKFxyK jZFlEf"><h2 class="sc-pNWdL ifgvjf"><a class="sc-crzoA-D jEsELy" href="#/paths/~1ws/post" aria-label="/paths/~1ws/post"></a>WebSocket message endpoint (for code generation only)<!-- --> </h2><div class="sc-iGkqmR kerVZv"><div html="&lt;p&gt;This endpoint is used only for code generation purposes&lt;/p&gt;
+" class="sc-iJCRrD sc-cBoqA-D gNgulf hiFwxj"><p>This endpoint is used only for code generation purposes</p>
+</div></div><h5 class="sc-iqAclM ecAusu">Request Body schema: <span class="sc-gXfVKK inCspo">application/json</span></h5><div html="" class="sc-iJCRrD sc-cBoqA-D gNgulf hiFwxj"></div><div><span class="sc-kfYoZO fBkdBz"> <!-- -->One of<!-- --> </span><div class="sc-dlMDgF feMCfH"><button class="sc-fKgJPH iZeEf">PingMessage</button><button class="sc-fKgJPH kSybGX">PongMessage</button><button class="sc-fKgJPH kSybGX">StartGameMessage</button><button class="sc-fKgJPH kSybGX">SchedulePodMessage</button></div><div></div><table class="sc-hHEiqM iLdXhW"><tbody><tr class=""><td kind="field" title="type" class="sc-hBMUJn sc-fFSPTU dWpYAJ wNtrM"><span class="sc-iemWCW jLBIcp"></span><span class="property-name">type</span><div class="sc-gSYDno sc-eJocfd hNSFbP hJEpGc">required</div></td><td class="sc-bkbkJN idNhXW"><div><div><span class="sc-gSYDno sc-laZMeD hNSFbP gYlTYC"></span><span class="sc-gSYDno sc-iNiQym hNSFbP eUUxjA">string</span></div> <div><div html="&lt;p&gt;Message type identifier&lt;/p&gt;
+" class="sc-iJCRrD sc-cBoqA-D gNgulf eiVoHx"><p>Message type identifier</p>
+</div></div><div><span class="sc-gSYDno hNSFbP"> <!-- -->Value:<!-- --> </span> <span class="sc-gSYDno sc-lbVvkl hNSFbP gbfOlU">&quot;ping&quot;</span></div></div></td></tr><tr class="last "><td kind="field" title="timestamp" class="sc-hBMUJn sc-fFSPTU dWpYAJ wNtrM"><span class="sc-iemWCW jLBIcp"></span><span class="property-name">timestamp</span><div class="sc-gSYDno sc-eJocfd hNSFbP hJEpGc">required</div></td><td class="sc-bkbkJN idNhXW"><div><div><span class="sc-gSYDno sc-laZMeD hNSFbP gYlTYC"></span><span class="sc-gSYDno sc-iNiQym hNSFbP eUUxjA">string</span><span class="sc-gSYDno sc-iNiQym hNSFbP eUUxjA"> <!-- -->&lt;<!-- -->date-time<!-- -->&gt;<!-- --> </span></div> <div><div html="&lt;p&gt;ISO 8601 timestamp when the message was created&lt;/p&gt;
+" class="sc-iJCRrD sc-cBoqA-D gNgulf eiVoHx"><p>ISO 8601 timestamp when the message was created</p>
+</div></div></div></td></tr></tbody></table></div><div><h3 class="sc-fIxmyq ihyEpP">Responses</h3><div><button class="sc-cbeScr fGSKVk"><svg class="sc-dIsUm cohdys" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-fWWYYj kFUVBT">200<!-- --> </strong><div html="&lt;p&gt;WebSocket response&lt;/p&gt;
+" class="sc-iJCRrD sc-cBoqA-D sc-ciSkZQ gNgulf iAZUDN jbGiJk"><p>WebSocket response</p>
+</div></button></div></div></div><div class="sc-jSFjdk sc-gKAaRB fRgQVh bSSPmY"><div class="sc-fXgAZu dPUnAU"><button class="sc-jXcxbU dyPdTB"><span type="post" class="sc-eEVmNh bxxoyg http-verb post">post</span><span class="sc-EZqKH fweBDh">/ws</span><svg class="sc-dIsUm kxMCrk" style="margin-right:-25px" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg></button><div aria-hidden="true" class="sc-fmdNqK gZkmV"><div class="sc-ljsmAT dpirXv"><div html="&lt;p&gt;Development WebSocket server&lt;/p&gt;
+" class="sc-iJCRrD sc-cBoqA-D gNgulf eiVoHx"><p>Development WebSocket server</p>
+</div><div tabindex="0" role="button"><div class="sc-jlZJtk jHBVdg"><span>ws://localhost:8080/ws</span>/ws</div></div></div><div class="sc-ljsmAT dpirXv"><div html="&lt;p&gt;Production WebSocket server&lt;/p&gt;
+" class="sc-iJCRrD sc-cBoqA-D gNgulf eiVoHx"><p>Production WebSocket server</p>
+</div><div tabindex="0" role="button"><div class="sc-jlZJtk jHBVdg"><span>wss://api.kubegame.dev/ws</span>/ws</div></div></div></div></div><div><h3 class="sc-kEqXSd daOkMJ"> <!-- -->Request samples<!-- --> </h3><div class="sc-cxNHIl MXKEj" data-rttabs="true"><ul class="react-tabs__tab-list" role="tablist"><li class="react-tabs__tab react-tabs__tab--selected" role="tab" id="tab:R156a:0" aria-selected="true" aria-disabled="false" aria-controls="panel:R156a:0" tabindex="0" data-rttab="true">Payload</li></ul><div class="react-tabs__tab-panel react-tabs__tab-panel--selected" role="tabpanel" id="panel:R156a:0" aria-labelledby="tab:R156a:0"><div><div class="sc-cOifOx djDGzb"><span class="sc-bBjRSK kIkkGR">Content type</span><div class="sc-dPaNzb YYhtM">application/json</div></div><div class="sc-hTRkXS ebTkPI"><div class="sc-cOifOx djDGzb"><span class="sc-bBjRSK kIkkGR">Example</span><div class="sc-jJMGnN sc-Arkig wKsYT gljdO"><svg class="sc-iklJee EQRAx" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg><select class="dropdown-select"><option value="PingMessage" selected="">PingMessage</option><option value="PongMessage">PongMessage</option><option value="StartGameMessage">StartGameMessage</option><option value="SchedulePodMessage">SchedulePodMessage</option></select><label>PingMessage</label></div></div><div><div class="sc-cTJkRq bDBsiB"><div class="sc-giAqHm iVBJIL"><button><div class="sc-jcwpoF ecJSzs">Copy</div></button></div><div tabindex="0" class="sc-iJCRrD gNgulf sc-jNnpgf dRMQQd"><div class="redoc-json"><code><button class="collapser" aria-label="collapse"></button><span class="token punctuation">{</span><span class="ellipsis"></span><ul class="obj collapsible"><li><div class="hoverable "><span class="property token string">"type"</span>: <span class="token string">&quot;ping&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"timestamp"</span>: <span class="token string">&quot;2019-08-24T14:15:22Z&quot;</span></div></li></ul><span class="token punctuation">}</span></code></div></div></div></div></div></div></div></div></div><div><h3 class="sc-kEqXSd daOkMJ"> <!-- -->Response samples<!-- --> </h3><div class="sc-cxNHIl MXKEj" data-rttabs="true"><ul class="react-tabs__tab-list" role="tablist"><li class="tab-success react-tabs__tab--selected" role="tab" id="tab:R176a:0" aria-selected="true" aria-disabled="false" aria-controls="panel:R176a:0" tabindex="0" data-rttab="true">200</li></ul><div class="react-tabs__tab-panel react-tabs__tab-panel--selected" role="tabpanel" id="panel:R176a:0" aria-labelledby="tab:R176a:0"><div><div class="sc-cOifOx djDGzb"><span class="sc-bBjRSK kIkkGR">Content type</span><div class="sc-dPaNzb YYhtM">application/json</div></div><div class="sc-hTRkXS ebTkPI"><div class="sc-cOifOx djDGzb"><span class="sc-bBjRSK kIkkGR">Example</span><div class="sc-jJMGnN sc-Arkig wKsYT gljdO"><svg class="sc-iklJee EQRAx" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg><select class="dropdown-select"><option value="SessionReadyEvent" selected="">SessionReadyEvent</option><option value="GameStartedEvent">GameStartedEvent</option><option value="GameOverEvent">GameOverEvent</option><option value="GameUpdateEvent">GameUpdateEvent</option><option value="PodCreatedEvent">PodCreatedEvent</option><option value="PodScheduledEvent">PodScheduledEvent</option><option value="ErrorEvent">ErrorEvent</option><option value="ServerPingEvent">ServerPingEvent</option></select><label>SessionReadyEvent</label></div></div><div><div class="sc-cTJkRq bDBsiB"><div class="sc-giAqHm iVBJIL"><button><div class="sc-jcwpoF ecJSzs">Copy</div></button></div><div tabindex="0" class="sc-iJCRrD gNgulf sc-jNnpgf dRMQQd"><div class="redoc-json"><code><button class="collapser" aria-label="collapse"></button><span class="token punctuation">{</span><span class="ellipsis"></span><ul class="obj collapsible"><li><div class="hoverable "><span class="property token string">"type"</span>: <span class="token string">&quot;session_ready&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"timestamp"</span>: <span class="token string">&quot;2019-08-24T14:15:22Z&quot;</span></div></li></ul><span class="token punctuation">}</span></code></div></div></div></div></div></div></div></div></div></div></div></div></div><div class="sc-ellfGg kPMcdA"></div></div></div>
+      <script>
+      const __redoc_state = {"menu":{"activeItemIdx":-1},"spec":{"data":{"openapi":"3.0.3","info":{"title":"KubeGame WebSocket API","description":"WebSocket API specification for the KubeGame project. This API handles real-time communication\nbetween the client (frontend) and server (backend) for the Kubernetes scheduling game.\n\nAll messages are exchanged via WebSocket connection and follow a consistent structure with\n`type`, `data`, and `timestamp` fields.\n","version":"1.0.0","contact":{"name":"KubeGame API Support"},"license":{"name":"MIT"}},"servers":[{"url":"ws://localhost:8080/ws","description":"Development WebSocket server"},{"url":"wss://api.kubegame.dev/ws","description":"Production WebSocket server"}],"paths":{"/ws":{"post":{"summary":"WebSocket message endpoint (for code generation only)","description":"This endpoint is used only for code generation purposes","requestBody":{"content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/PingMessage"},{"$ref":"#/components/schemas/PongMessage"},{"$ref":"#/components/schemas/StartGameMessage"},{"$ref":"#/components/schemas/SchedulePodMessage"}]}}}},"responses":{"200":{"description":"WebSocket response","content":{"application/json":{"schema":{"oneOf":[{"$ref":"#/components/schemas/SessionReadyEvent"},{"$ref":"#/components/schemas/GameStartedEvent"},{"$ref":"#/components/schemas/GameOverEvent"},{"$ref":"#/components/schemas/GameUpdateEvent"},{"$ref":"#/components/schemas/PodCreatedEvent"},{"$ref":"#/components/schemas/PodScheduledEvent"},{"$ref":"#/components/schemas/ErrorEvent"},{"$ref":"#/components/schemas/ServerPingEvent"}]}}}}}}}},"components":{"schemas":{"BaseMessage":{"type":"object","required":["type","timestamp"],"properties":{"type":{"type":"string","description":"Message type identifier"},"timestamp":{"type":"string","format":"date-time","description":"ISO 8601 timestamp when the message was created"}},"discriminator":{"propertyName":"type"}},"PodLabels":{"type":"string","enum":["banana","chocolate","strawberry","vanilla"],"description":"Enumeration of available pod labels/types:\n- banana: 🍌\n- chocolate: 🍫  \n- strawberry: 🍓\n- vanilla: 🍦\n"},"Affinity":{"type":"object","description":"Pod affinity and anti-affinity rules","required":["podAffinity","podAntiAffinity","nodeAffinity","nodeAntiAffinity"],"properties":{"podAffinity":{"type":"object","required":["values"],"properties":{"values":{"type":"array","items":{"$ref":"#/components/schemas/PodLabels"},"description":"Pod labels that this pod should be co-located with"}}},"podAntiAffinity":{"type":"object","required":["values"],"properties":{"values":{"type":"array","items":{"$ref":"#/components/schemas/PodLabels"},"description":"Pod labels that this pod should not be co-located with"}}},"nodeAffinity":{"type":"object","required":["values"],"properties":{"values":{"type":"array","items":{"$ref":"#/components/schemas/PodLabels"},"description":"Node labels that this pod should be scheduled to"}}},"nodeAntiAffinity":{"type":"object","required":["values"],"properties":{"values":{"type":"array","items":{"$ref":"#/components/schemas/PodLabels"},"description":"Node labels that this pod should not be scheduled to"}}}},"additionalProperties":false},"ResourceRequirements":{"type":"object","description":"CPU and memory resource requirements or capacity","required":["cpu","memory"],"properties":{"cpu":{"type":"integer","minimum":0,"description":"CPU requirement/capacity in cores"},"memory":{"type":"integer","minimum":0,"description":"Memory requirement/capacity in bytes"}},"additionalProperties":false},"PodInfo":{"type":"object","description":"Pod information including status and resource requirements","required":["id","name","label","affinity","requirements","status"],"properties":{"id":{"type":"string","description":"Unique pod identifier"},"name":{"type":"string","description":"Pod name"},"label":{"$ref":"#/components/schemas/PodLabels"},"affinity":{"$ref":"#/components/schemas/Affinity"},"requirements":{"$ref":"#/components/schemas/ResourceRequirements"},"status":{"type":"string","enum":["pending","scheduling","scheduled","unscheduled","terminating"],"description":"Current pod status"},"nodeID":{"type":"string","nullable":true,"description":"ID of the node the pod is scheduled to (null if pending)"}},"additionalProperties":false},"NodeInfo":{"type":"object","description":"Node information including capacity and usage","required":["id","name","type","capacity","used"],"properties":{"id":{"type":"string","description":"Unique node identifier"},"name":{"type":"string","description":"Node name"},"type":{"type":"string","enum":["player","scheduler"],"description":"Node type - player controllable or scheduler controlled"},"capacity":{"$ref":"#/components/schemas/ResourceRequirements"},"used":{"$ref":"#/components/schemas/ResourceRequirements"}},"additionalProperties":false},"ClusterInfo":{"type":"object","description":"Information about a cluster including its pods and nodes","required":["pods","nodes"],"properties":{"pods":{"type":"array","description":"Current state of all pods in the cluster","items":{"$ref":"#/components/schemas/PodInfo"}},"nodes":{"type":"array","description":"Current state of all nodes in the cluster","items":{"$ref":"#/components/schemas/NodeInfo"}}},"additionalProperties":false},"GameInfo":{"type":"object","description":"Complete game state information including scores and cluster data","required":["timeLeft","playerScore","cpuScore","playerCluster","schedulerCluster"],"properties":{"timeLeft":{"type":"integer","minimum":0,"description":"Time remaining in seconds"},"playerScore":{"type":"integer","minimum":0,"description":"Current player score"},"cpuScore":{"type":"integer","minimum":0,"description":"Current Kubernetes scheduler score"},"playerCluster":{"$ref":"#/components/schemas/ClusterInfo"},"schedulerCluster":{"$ref":"#/components/schemas/ClusterInfo"}},"additionalProperties":false},"PingMessage":{"allOf":[{"$ref":"#/components/schemas/BaseMessage"},{"type":"object","properties":{"type":{"type":"string","const":"ping"}},"required":["type"]}],"additionalProperties":false},"PongMessage":{"allOf":[{"$ref":"#/components/schemas/BaseMessage"},{"type":"object","properties":{"type":{"type":"string","const":"pong"}},"required":["type"]}],"additionalProperties":false},"StartGameMessage":{"allOf":[{"$ref":"#/components/schemas/BaseMessage"},{"type":"object","properties":{"type":{"type":"string","const":"start_game"}},"required":["type"]}],"additionalProperties":false},"SchedulePodMessage":{"allOf":[{"$ref":"#/components/schemas/BaseMessage"},{"type":"object","required":["type","data"],"properties":{"type":{"type":"string","const":"schedule_pod"},"data":{"type":"object","required":["pod_id","node_id"],"properties":{"pod_id":{"type":"string","description":"Unique identifier of the pod to schedule"},"node_id":{"type":"string","description":"Unique identifier of the target node"}},"additionalProperties":false}}}],"additionalProperties":false},"SessionReadyEvent":{"allOf":[{"$ref":"#/components/schemas/BaseMessage"},{"type":"object","properties":{"type":{"type":"string","const":"session_ready"}},"required":["type"]}],"additionalProperties":false},"GameStartedEvent":{"allOf":[{"$ref":"#/components/schemas/BaseMessage"},{"type":"object","required":["type","data"],"properties":{"type":{"type":"string","const":"game_started"},"data":{"$ref":"#/components/schemas/GameInfo"}}}],"additionalProperties":false},"GameOverEvent":{"allOf":[{"$ref":"#/components/schemas/BaseMessage"},{"type":"object","required":["type","data"],"properties":{"type":{"type":"string","const":"game_over"},"data":{"$ref":"#/components/schemas/GameInfo"}}}],"additionalProperties":false},"GameUpdateEvent":{"allOf":[{"$ref":"#/components/schemas/BaseMessage"},{"type":"object","required":["type","data"],"properties":{"type":{"type":"string","const":"game_update"},"data":{"$ref":"#/components/schemas/GameInfo"}}}],"additionalProperties":false},"PodCreatedEvent":{"allOf":[{"$ref":"#/components/schemas/BaseMessage"},{"type":"object","required":["type","data"],"properties":{"type":{"type":"string","const":"pod_created"},"data":{"$ref":"#/components/schemas/GameInfo"}}}],"additionalProperties":false},"PodScheduledEvent":{"allOf":[{"$ref":"#/components/schemas/BaseMessage"},{"type":"object","required":["type","data"],"properties":{"type":{"type":"string","const":"pod_scheduled"},"data":{"$ref":"#/components/schemas/GameInfo"}}}],"additionalProperties":false},"ErrorEvent":{"allOf":[{"$ref":"#/components/schemas/BaseMessage"},{"type":"object","required":["type","data"],"properties":{"type":{"type":"string","const":"error"},"data":{"type":"object","required":["message","code"],"properties":{"message":{"type":"string","description":"Human-readable error description"},"code":{"type":"string","enum":["POD_NOT_FOUND","NODE_NOT_FOUND","INSUFFICIENT_RESOURCES","INVALID_SESSION","GAME_NOT_RUNNING","CLUSTER_NOT_READY","CROSS_SESSION_ACCESS","INVALID_REQUEST"],"description":"Error code for programmatic handling"},"details":{"type":"object","description":"Optional additional error details"}},"additionalProperties":false}}}],"additionalProperties":false},"ServerPingEvent":{"allOf":[{"$ref":"#/components/schemas/BaseMessage"},{"type":"object","properties":{"type":{"type":"string","const":"ping"}},"required":["type"]}],"additionalProperties":false}},"examples":{"PingMessageExample":{"summary":"Client ping message","value":{"type":"ping","timestamp":"2023-10-01T12:00:00Z"}},"SchedulePodExample":{"summary":"Schedule pod message","value":{"type":"schedule_pod","timestamp":"2023-10-01T12:00:00Z","data":{"pod_id":"pod-123","node_id":"worker-01"}}},"GameUpdateExample":{"summary":"Game state update","value":{"type":"game_update","timestamp":"2023-10-01T12:00:01Z","data":{"timeLeft":250,"playerScore":5,"cpuScore":3,"playerCluster":{"nodes":[{"id":"worker-01","name":"worker-01","type":"player","capacity":{"cpu":2,"memory":4294967296},"used":{"cpu":0.5,"memory":1073741824}}],"pods":[{"id":"pod-123","name":"test-pod","label":"banana","status":"pending","nodeID":null,"requirements":{"cpu":0.1,"memory":134217728},"affinity":{"podAffinity":{"values":[]},"podAntiAffinity":{"values":[]},"nodeAffinity":{"values":[]},"nodeAntiAffinity":{"values":[]}}}]},"schedulerCluster":{"nodes":[{"id":"scheduler-01","name":"scheduler-01","type":"scheduler","capacity":{"cpu":2,"memory":4294967296},"used":{"cpu":0,"memory":0}}],"pods":[]}}}},"ErrorEventExample":{"summary":"Error event","value":{"type":"error","timestamp":"2023-10-01T12:00:00Z","data":{"message":"Pod not found","code":"POD_NOT_FOUND","details":{"pod_id":"pod-invalid"}}}}}},"tags":[{"name":"client-messages","description":"Messages sent from client to server"},{"name":"server-events","description":"Events sent from server to client"},{"name":"heartbeat","description":"Ping/pong heartbeat messages"}]}},"searchIndex":{"store":["tag/client-messages","tag/server-events","tag/heartbeat","/paths/~1ws/post"],"index":{"version":"2.3.9","fields":["title","description"],"fieldVectors":[["title/0",[0,1.514]],["description/0",[1,0.365,2,0.71,3,0.71,4,0.71]],["title/1",[5,1.514]],["description/1",[2,0.71,3,0.71,4,0.71,6,1.234]],["title/2",[7,0.871]],["description/2",[1,0.405,7,0.788,8,1.369]],["title/3",[1,0.221,9,0.746,10,0.43,11,0.43,12,0.43]],["description/3",[10,0.593,11,0.593,12,0.593,13,1.03,14,1.03,15,1.03]]],"invertedIndex":[["client",{"_index":3,"title":{},"description":{"0":{},"1":{}}}],["client-messag",{"_index":0,"title":{"0":{}},"description":{}}],["code",{"_index":11,"title":{"3":{}},"description":{"3":{}}}],["endpoint",{"_index":10,"title":{"3":{}},"description":{"3":{}}}],["event",{"_index":6,"title":{},"description":{"1":{}}}],["gener",{"_index":12,"title":{"3":{}},"description":{"3":{}}}],["heartbeat",{"_index":7,"title":{"2":{}},"description":{"2":{}}}],["messag",{"_index":1,"title":{"3":{}},"description":{"0":{},"2":{}}}],["ping/pong",{"_index":8,"title":{},"description":{"2":{}}}],["purpos",{"_index":14,"title":{},"description":{"3":{}}}],["sent",{"_index":2,"title":{},"description":{"0":{},"1":{}}}],["server",{"_index":4,"title":{},"description":{"0":{},"1":{}}}],["server-ev",{"_index":5,"title":{"1":{}},"description":{}}],["us",{"_index":13,"title":{},"description":{"3":{}}}],["websocket",{"_index":9,"title":{"3":{}},"description":{}}],["ws",{"_index":15,"title":{},"description":{"3":{}}}]],"pipeline":[]}},"options":{}};
+
+      var container = document.getElementById('redoc');
+      Redoc.hydrate(__redoc_state, container);
+
+      </script>
+</body>
+
+</html>
