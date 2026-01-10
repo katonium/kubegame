@@ -415,7 +415,6 @@ func (s *gameSessionService) createInitialPods(ctx context.Context, gameID strin
 			Label:        podSpec.label,
 			Requirements: podSpec.requirements,
 			Status:       entity.PodStatusPending,
-			Owner:        entity.PodOwnerNone, // Available for scheduling
 			Namespace:    session.PlayerNamespace,
 			CreatedAt:    time.Now(),
 		}
@@ -431,7 +430,6 @@ func (s *gameSessionService) createInitialPods(ctx context.Context, gameID strin
 			Label:        podSpec.label,
 			Requirements: podSpec.requirements,
 			Status:       entity.PodStatusPending,
-			Owner:        entity.PodOwnerNone, // Available for scheduling
 			Namespace:    session.SchedulerNamespace,
 			CreatedAt:    time.Now(),
 		}

@@ -307,11 +307,6 @@ func (f *fakeClient) convertK8sPodToEntity(k8sPod *corev1.Pod) *entity.Pod {
 		podLabel = entity.PodLabel(labelValue)
 	}
 
-	owner := entity.PodOwnerNone
-	if ownerLabel, exists := k8sPod.Labels["kubegame.io/owner"]; exists {
-		owner = entity.PodOwner(ownerLabel)
-	}
-
 	var nodeID *string
 	if k8sPod.Spec.NodeName != "" {
 		nodeID = &k8sPod.Spec.NodeName
@@ -330,7 +325,6 @@ func (f *fakeClient) convertK8sPodToEntity(k8sPod *corev1.Pod) *entity.Pod {
 		Name:   podName,
 		Label:  podLabel,
 		Status: status,
-		Owner:  owner,
 		NodeID: nodeID,
 		Requirements: entity.ResourceRequirements{
 			CPU:    cpuReq,

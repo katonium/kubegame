@@ -135,7 +135,6 @@ func (uc *GameInteractor) generateInitialPods(gameID string) []*entity.Pod {
 				Memory: rand.Intn(3) + 1, // 1-3 GB
 			},
 			Status:    entity.PodStatusPending,
-			Owner:     entity.PodOwnerNone, // Available for both player and Kubernetes scheduler
 			CreatedAt: time.Now(),
 		}
 		pods = append(pods, pod)

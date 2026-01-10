@@ -87,7 +87,6 @@ func TestFakeClient_PodOperations(t *testing.T) {
 			},
 			Status:    entity.PodStatusPending,
 			NodeID:    nil,
-			Owner:     entity.PodOwnerPlayer,
 			Namespace: "default",
 		}
 
@@ -149,7 +148,6 @@ func TestFakeClient_SchedulingOperations(t *testing.T) {
 			CPU:    2,
 			Memory: 3,
 		},
-		Owner:     entity.PodOwnerPlayer,
 		Namespace: "default",
 	}
 	if err := client.CreatePod(ctx, "default", pod); err != nil {

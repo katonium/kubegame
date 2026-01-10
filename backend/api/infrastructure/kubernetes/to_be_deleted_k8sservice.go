@@ -105,7 +105,6 @@ func (k *kubernetesService) CreatePod(ctx context.Context, pod *entity.Pod) erro
 				"kubegame.io/pod-id":    pod.ID,
 				"kubegame.io/pod-name":  pod.Name,
 				"kubegame.io/pod-label": string(pod.Label),
-				"kubegame.io/owner":     string(pod.Owner),
 			},
 		},
 		Spec: corev1.PodSpec{
@@ -328,11 +327,6 @@ func (k *kubernetesService) convertK8sPodToEntity(k8sPod *corev1.Pod) *entity.Po
 		podLabel = entity.PodLabel(labelValue)
 	}
 
-	owner := entity.PodOwnerNone
-	if ownerLabel, exists := k8sPod.Labels["kubegame.io/owner"]; exists {
-		owner = entity.PodOwner(ownerLabel)
-	}
-
 	var nodeID *string
 	if k8sPod.Spec.NodeName != "" {
 		nodeID = &k8sPod.Spec.NodeName
@@ -343,7 +337,6 @@ func (k *kubernetesService) convertK8sPodToEntity(k8sPod *corev1.Pod) *entity.Po
 		Name:   podName,
 		Label:  podLabel,
 		Status: status,
-		Owner:  owner,
 		NodeID: nodeID,
 		Requirements: entity.ResourceRequirements{
 			CPU:    cpuReq,

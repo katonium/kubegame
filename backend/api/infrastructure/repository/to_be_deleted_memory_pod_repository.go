@@ -74,13 +74,9 @@ func (r *memoryPodRepository) GetPodsByOwner(ctx context.Context, owner entity.P
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
+	// NOTE: Owner field has been removed. Ownership is now determined by namespace.
+	// This method is deprecated and should not be used.
 	pods := make([]*entity.Pod, 0)
-	for _, pod := range r.pods {
-		if pod.Owner == owner {
-			pods = append(pods, pod)
-		}
-	}
-
 	return pods, nil
 }
 

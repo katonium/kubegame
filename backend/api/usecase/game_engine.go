@@ -250,7 +250,6 @@ func (g *GameEngineUseCase) generateInitialPodsAndNodes(gameID string) error {
 			},
 			Status:    entity.PodStatusPending,
 			NodeID:    nil,
-			Owner:     entity.PodOwnerPlayer,
 			Namespace: NamespacePlayer,
 			CreatedAt: time.Now(),
 		}
@@ -271,7 +270,6 @@ func (g *GameEngineUseCase) generateInitialPodsAndNodes(gameID string) error {
 			},
 			Status:    entity.PodStatusPending,
 			NodeID:    nil,
-			Owner:     entity.PodOwnerCPU,
 			Namespace: NamespaceScheduler,
 			CreatedAt: time.Now(),
 		}
